@@ -213,7 +213,7 @@ class ConfigurationCacheBuildServiceIntegrationTest extends AbstractConfiguratio
             file('settings.gradle') << """
                 pluginManagement {
                     repositories {
-                        maven { url '$mavenRepo.uri' }
+                        maven { url = '$mavenRepo.uri' }
                     }
                 }
             """
@@ -441,7 +441,7 @@ class ConfigurationCacheBuildServiceIntegrationTest extends AbstractConfiguratio
                 version = "1.0"
                 publishing {
                     repositories {
-                        maven { url '$mavenRepo.uri' }
+                        maven { url = '$mavenRepo.uri' }
                     }
                 }
                 gradlePlugin {
@@ -831,7 +831,7 @@ class ConfigurationCacheBuildServiceIntegrationTest extends AbstractConfiguratio
             file('settings.gradle') << """
                 pluginManagement {
                     repositories {
-                        maven { url '$mavenRepo.uri' }
+                        maven { url = '$mavenRepo.uri' }
                     }
                 }
             """
