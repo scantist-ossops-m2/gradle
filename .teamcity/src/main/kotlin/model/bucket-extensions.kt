@@ -46,9 +46,8 @@ fun <T, R> splitIntoBuckets(
         return listOf(smallElementAggregateFunction(list))
     }
 
-    val expectedBucketSize = list.sumOf(toIntFunction) / expectedBucketNumber
-
-    if (expectedBucketSize == 0) {
+    val roughSizeOfEachBucket = list.sumOf(toIntFunction) / expectedBucketNumber
+    if (roughSizeOfEachBucket == 0) {
         // The elements in the list are so small that they can't even be divided into {expectedBucketNumber}.
         // For example, how do you split [0,0,0,0,0] into 3 buckets?
         // In this case, we simply put the elements into these buckets evenly.
@@ -59,24 +58,62 @@ fun <T, R> splitIntoBuckets(
 
     val largestElementSize = toIntFunction(largestElement)
 
-    return if (largestElementSize >= expectedBucketSize) {
-        val bucketNumberOfFirstElement = if (largestElementSize % expectedBucketSize == 0)
-            largestElementSize / expectedBucketSize
+    if (largestElementSize >= roughSizeOfEachBucket) {
+        // we'll split it into a few (maybe 1) buckets
+        var bucketNumberOfFirstElement = if (largestElementSize % roughSizeOfEachBucket == 0)
+            largestElementSize / roughSizeOfEachBucket
         else
-        // Leave at least one bucket for the remaining elements
-            min(largestElementSize / expectedBucketSize + 1, expectedBucketNumber - 1)
+            largestElementSize / roughSizeOfEachBucket + 1
+
+        while (true) {
+            if (bucketNumberOfFirstElement == 1) {
+                break
+            }
+
+            if (expectedBucketNumber - bucketNumberOfFirstElement <= 0) {
+                bucketNumberOfFirstElement--;
+            } else {
+                val roughSizeOfEachBucketForRestElements =
+                    list.sumOf(toIntFunction) / (expectedBucketNumber - bucketNumberOfFirstElement)
+
+                if (roughSizeOfEachBucketForRestElements > roughSizeOfEachBucket) {
+                    bucketNumberOfFirstElement--
+                } else {
+                    break
+                }
+            }
+        }
+
         val bucketsOfFirstElement = largeElementSplitFunction(largestElement, bucketNumberOfFirstElement)
-        val bucketsOfRestElements = splitIntoBuckets(list, toIntFunction, largeElementSplitFunction, smallElementAggregateFunction, expectedBucketNumber - bucketsOfFirstElement.size, maxNumberInBucket, noElementSplitFunction, canRunTogether)
-        bucketsOfFirstElement + bucketsOfRestElements
+        val bucketsOfRestElements = splitIntoBuckets(
+            list,
+            toIntFunction,
+            largeElementSplitFunction,
+            smallElementAggregateFunction,
+            expectedBucketNumber - bucketsOfFirstElement.size,
+            maxNumberInBucket,
+            noElementSplitFunction,
+            canRunTogether
+        )
+        return bucketsOfFirstElement + bucketsOfRestElements
     } else {
         val buckets = arrayListOf(largestElement)
-        var restCapacity = expectedBucketSize - toIntFunction(largestElement)
+        var restCapacity = roughSizeOfEachBucket - toIntFunction(largestElement)
         while (restCapacity > 0 && list.isNotEmpty() && buckets.size < maxNumberInBucket) {
             val smallestElement = list.findLast { searched -> buckets.all { canRunTogether(it, searched) } } ?: break
             list.remove(smallestElement)
             buckets.add(smallestElement)
             restCapacity -= toIntFunction(smallestElement)
         }
-        listOf(smallElementAggregateFunction(buckets)) + splitIntoBuckets(list, toIntFunction, largeElementSplitFunction, smallElementAggregateFunction, expectedBucketNumber - 1, maxNumberInBucket, noElementSplitFunction, canRunTogether)
+        return listOf(smallElementAggregateFunction(buckets)) + splitIntoBuckets(
+            list,
+            toIntFunction,
+            largeElementSplitFunction,
+            smallElementAggregateFunction,
+            expectedBucketNumber - 1,
+            maxNumberInBucket,
+            noElementSplitFunction,
+            canRunTogether
+        )
     }
 }
