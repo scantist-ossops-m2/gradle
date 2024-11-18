@@ -59,11 +59,13 @@ public abstract class AbstractArtifactTransformReportTask extends DefaultTask im
     @Inject protected abstract StyledTextOutputFactory getTextOutputFactory();
 
     /**
-     * Builds the specification for which transforms to report on.
+     * Builds the specification determining which transforms to report on.
      *
      * @since 8.12
      */
-    protected abstract ArtifactTransformReportSpec buildReportSpec();
+    protected ArtifactTransformReportSpec buildReportSpec() {
+        return new ArtifactTransformReportSpec();
+    }
 
     /**
      * Creates a new instance.

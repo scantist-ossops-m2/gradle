@@ -44,7 +44,7 @@ public final class ConsoleArtifactTransformReportRenderer extends AbstractArtifa
     }
 
     private void writeCompleteAbsenceOfResults(ArtifactTransformReportModel model) {
-        message("There are no ArtifactTransforms registered in project '" + model.getProjectName() + "'.");
+        message("There are no Artifact Transforms registered in project '" + model.getProjectName() + "'.");
     }
 
     private void message(String msg) {
