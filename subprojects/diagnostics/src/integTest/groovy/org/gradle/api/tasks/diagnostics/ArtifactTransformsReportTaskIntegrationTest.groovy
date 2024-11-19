@@ -25,13 +25,106 @@ class ArtifactTransformsReportTaskIntegrationTest extends AbstractIntegrationSpe
         """
     }
 
-    def "if no artifact transforms present in project, task reports complete absence"() {
+    def "if no transforms present in project, task reports complete absence"() {
         expect:
         succeeds ':artifactTransforms'
         reportsCompleteAbsenceOfArtifactTransforms()
     }
 
+    def "if single transform is registered by buildscript, task reports it"() {
+        given:
+        buildFile << """
+            ${defineAttributes()}
+            ${defineEmptyTransform()}
+
+            dependencies {
+                registerTransform(EmptyTransform) {
+                    from.attribute(color, "blue")
+                    to.attribute(color, "red")
+                    from.attribute(shape, "square")
+                    to.attribute(shape, "circle")
+                }
+            }
+        """
+
+        when:
+        succeeds ':artifactTransforms'
+
+        then:
+        result.groupedOutput.task(":artifactTransforms").assertOutputContains("""--------------------------------------------------
+Transform EmptyTransform (unnamed)
+--------------------------------------------------
+Type: EmptyTransform
+From Attributes:
+    - color = blue
+    - shape = square
+To Attributes:
+    - color = red
+    - shape = circle
+""")
+    }
+
+    def "if two cacheable transforms are registered by buildscript, task reports them"() {
+        given:
+        buildFile << """
+            ${defineAttributes()}
+            ${defineEmptyTransform()}
+            ${defineEmptyTransform("OtherTransform", true)}
+
+            dependencies {
+                registerTransform(EmptyTransform) {
+                    from.attribute(color, "blue")
+                    to.attribute(color, "red")
+                }
+
+                registerTransform(OtherTransform) {
+                    from.attribute(shape, "square")
+                    to.attribute(shape, "circle")
+                }
+            }
+        """
+
+        when:
+        succeeds ':artifactTransforms'
+
+        then:
+        result.groupedOutput.task(":artifactTransforms").assertOutputContains("""--------------------------------------------------
+Transform EmptyTransform (unnamed)
+--------------------------------------------------
+Type: EmptyTransform
+From Attributes:
+    - color = blue
+To Attributes:
+    - color = red
+
+--------------------------------------------------
+Transform OtherTransform (unnamed)
+--------------------------------------------------
+Type: OtherTransform (cacheable)
+From Attributes:
+    - shape = square
+To Attributes:
+    - shape = circle
+""")
+    }
+
+    private String defineAttributes() {
+        return """
+            def color = Attribute.of("color", String)
+            def shape = Attribute.of("shape", String)
+        """
+    }
+
+    private String defineEmptyTransform(String name = "EmptyTransform", boolean cacheable = false) {
+        return """
+            ${cacheable ? "@CacheableTransform" : ""}
+            abstract class $name implements TransformAction<org.gradle.api.artifacts.transform.TransformParameters.None> {
+                void transform(TransformOutputs outputs) {}
+            }
+        """
+    }
+
     private void reportsCompleteAbsenceOfArtifactTransforms(String projectName = "myLib") {
-        outputContains("There are no Artifact Transforms registered in project '$projectName'.")
+        outputContains("There are no transforms registered in project '$projectName'.")
     }
 }

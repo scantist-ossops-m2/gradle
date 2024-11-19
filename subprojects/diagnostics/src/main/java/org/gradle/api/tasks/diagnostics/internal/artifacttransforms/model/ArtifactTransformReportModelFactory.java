@@ -17,14 +17,42 @@
 package org.gradle.api.tasks.diagnostics.internal.artifacttransforms.model;
 
 import org.gradle.api.Project;
+import org.gradle.api.internal.artifacts.TransformRegistration;
+import org.gradle.api.internal.artifacts.VariantTransformRegistry;
+import org.gradle.api.internal.artifacts.transform.Transform;
 
-import java.util.Collections;
+import javax.inject.Inject;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Factory for creating {@link ArtifactTransformReportModel} instances which represent the Artifact Transforms present in a project.
  */
-public final class ArtifactTransformReportModelFactory {
+public abstract class ArtifactTransformReportModelFactory {
+    private final VariantTransformRegistry variantTransformRegistry;
+
+    @Inject
+    public ArtifactTransformReportModelFactory(VariantTransformRegistry variantTransformRegistry) {
+        this.variantTransformRegistry = variantTransformRegistry;
+    }
+
     public ArtifactTransformReportModel buildForProject(Project project) {
-        return new ArtifactTransformReportModel(project.getName(), Collections.emptyList());
+        List<ReportArtifactTransform> artifactTransformData = variantTransformRegistry.getRegistrations().stream()
+            .map(this::convertArtifactTransform)
+            .collect(Collectors.toList());
+
+        return new ArtifactTransformReportModel(project.getName(), artifactTransformData);
+    }
+
+    private ReportArtifactTransform convertArtifactTransform(TransformRegistration transformRegistration) {
+        Transform transform = transformRegistration.getTransformStep().getTransform();
+        return new ReportArtifactTransform(
+            null, // name
+            null, // description
+            transform.getImplementationClass(),
+            transform.getFromAttributes(),
+            transform.getToAttributes(),
+            transform.isCacheable()
+        );
     }
 }

@@ -16,17 +16,56 @@
 
 package org.gradle.api.tasks.diagnostics.internal.artifacttransforms.model;
 
+import org.gradle.api.internal.attributes.ImmutableAttributes;
+
+import javax.annotation.Nullable;
+
 /**
  * Lightweight, immutable model of an Artifact Transform for reporting.
  */
 public final class ReportArtifactTransform {
-    private final Class<?> transformClass;
+    @Nullable
+    private final String name;
+    @Nullable
+    private final String description;
 
-    public ReportArtifactTransform(Class<?> transformClass) {
+    private final Class<?> transformClass;
+    private final ImmutableAttributes fromAttributes;
+    private final ImmutableAttributes toAttributes;
+
+    private final boolean cacheable;
+
+    public ReportArtifactTransform(@Nullable String name, @Nullable String description, Class<?> transformClass, ImmutableAttributes fromAttributes, ImmutableAttributes toAttributes, boolean cacheable) {
+        this.name = name;
+        this.description = description;
         this.transformClass = transformClass;
+        this.fromAttributes = fromAttributes;
+        this.toAttributes = toAttributes;
+        this.cacheable = cacheable;
+    }
+
+    public String getName() {
+        return (name != null) ? name : transformClass.getSimpleName() + " (unnamed)";
+    }
+
+    @Nullable
+    public String getDescription() {
+        return description;
     }
 
     public Class<?> getTransformClass() {
         return transformClass;
+    }
+
+    public ImmutableAttributes getFromAttributes() {
+        return fromAttributes;
+    }
+
+    public ImmutableAttributes getToAttributes() {
+        return toAttributes;
+    }
+
+    public boolean isCacheable() {
+        return cacheable;
     }
 }

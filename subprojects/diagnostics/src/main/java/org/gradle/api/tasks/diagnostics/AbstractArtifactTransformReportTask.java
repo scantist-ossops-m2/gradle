@@ -54,8 +54,7 @@ public abstract class AbstractArtifactTransformReportTask extends DefaultTask im
     private final ArtifactTransformReports reports;
     private final Cached<ArtifactTransformReportModel> reportModel = Cached.of(this::createReportModel);
 
-    @Inject
-    protected abstract ObjectFactory getObjectFactory();
+    @Inject protected abstract ObjectFactory getObjectFactory();
     @Inject protected abstract StyledTextOutputFactory getTextOutputFactory();
 
     /**
@@ -135,7 +134,7 @@ public abstract class AbstractArtifactTransformReportTask extends DefaultTask im
     }
 
     private ArtifactTransformReportModel buildReportModel(Project project) {
-        final ArtifactTransformReportModelFactory factory = new ArtifactTransformReportModelFactory();
+        final ArtifactTransformReportModelFactory factory = getObjectFactory().newInstance(ArtifactTransformReportModelFactory.class);
         return factory.buildForProject(project);
     }
 }
