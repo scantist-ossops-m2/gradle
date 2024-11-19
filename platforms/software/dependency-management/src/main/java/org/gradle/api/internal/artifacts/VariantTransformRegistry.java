@@ -21,6 +21,7 @@ import org.gradle.api.artifacts.transform.TransformAction;
 import org.gradle.api.artifacts.transform.TransformParameters;
 import org.gradle.api.artifacts.transform.TransformSpec;
 
+import javax.annotation.Nullable;
 import java.util.List;
 
 public interface VariantTransformRegistry {
@@ -30,7 +31,7 @@ public interface VariantTransformRegistry {
      *
      * @see TransformAction
      */
-    <T extends TransformParameters> void registerTransform(Class<? extends TransformAction<T>> actionType, Action<? super TransformSpec<T>> registrationAction);
+    <T extends TransformParameters> void registerTransform(@Nullable String name, Class<? extends TransformAction<T>> actionType, Action<? super TransformSpec<T>> registrationAction);
 
     List<TransformRegistration> getRegistrations();
 }
