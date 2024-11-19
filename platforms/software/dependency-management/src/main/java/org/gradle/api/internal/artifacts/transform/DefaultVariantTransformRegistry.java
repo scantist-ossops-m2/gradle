@@ -16,7 +16,8 @@
 
 package org.gradle.api.internal.artifacts.transform;
 
-import groovyjarjarantlr4.v4.runtime.misc.MultiMap;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
 import org.gradle.api.Action;
 import org.gradle.api.NonExtensible;
 import org.gradle.api.artifacts.transform.TransformAction;
@@ -40,7 +41,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class DefaultVariantTransformRegistry implements VariantTransformRegistry {
-    private final MultiMap<String, TransformRegistration> registrations = new MultiMap<>();
+    private final Multimap<String, TransformRegistration> registrations = ArrayListMultimap.create();
     private final AttributesFactory attributesFactory;
     private final ServiceRegistry services;
     private final InstantiatorFactory instantiatorFactory;
@@ -106,7 +107,7 @@ public class DefaultVariantTransformRegistry implements VariantTransformRegistry
             validateName(registration.name);
             validateAttributes(registration);
             TransformRegistration finalizedRegistration = registrationFactory.create(registration.name, registration.from.asImmutable(), registration.to.asImmutable(), actionType, parameterObject);
-            registrations.map(registration.name, finalizedRegistration);
+            registrations.put(registration.name, finalizedRegistration);
         } catch (Exception e) {
             TreeFormatter formatter = new TreeFormatter();
             formatter.node("Could not register artifact transform ");
@@ -150,11 +151,7 @@ public class DefaultVariantTransformRegistry implements VariantTransformRegistry
 
     @Override
     public List<TransformRegistration> getRegistrations() {
-        return registrations.values().stream()
-            .reduce(new ArrayList<>(), (acc, value) -> {
-                acc.addAll(value);
-                return acc;
-            });
+        return new ArrayList<>(registrations.values());
     }
 
     public static abstract class RecordingRegistration {
