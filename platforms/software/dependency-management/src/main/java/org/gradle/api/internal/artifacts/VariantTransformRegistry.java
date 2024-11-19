@@ -25,9 +25,17 @@ import javax.annotation.Nullable;
 import java.util.List;
 
 public interface VariantTransformRegistry {
-
     /**
      * Register an artifact transform.
+     *
+     * @see TransformAction
+     */
+    default <T extends TransformParameters> void registerTransform(Class<? extends TransformAction<T>> actionType, Action<? super TransformSpec<T>> registrationAction) {
+        registerTransform(null, actionType, registrationAction);
+    }
+
+    /**
+     * Register an artifact transform with a name for error identification and reporting.
      *
      * @see TransformAction
      */

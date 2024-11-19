@@ -52,9 +52,8 @@ class ArtifactTransformsReportTaskIntegrationTest extends AbstractIntegrationSpe
 
         then:
         result.groupedOutput.task(":artifactTransforms").assertOutputContains("""--------------------------------------------------
-Transform EmptyTransform (unnamed)
+Transform EmptyTransform
 --------------------------------------------------
-Type: EmptyTransform
 From Attributes:
     - color = blue
     - shape = square
@@ -64,7 +63,7 @@ To Attributes:
 """)
     }
 
-    def "if two cacheable transforms are registered by buildscript, task reports them"() {
+    def "if cacheable transform is registered by buildscript, task reports it"() {
         given:
         buildFile << """
             ${defineAttributes()}
@@ -89,18 +88,58 @@ To Attributes:
 
         then:
         result.groupedOutput.task(":artifactTransforms").assertOutputContains("""--------------------------------------------------
-Transform EmptyTransform (unnamed)
+Transform EmptyTransform
 --------------------------------------------------
-Type: EmptyTransform
 From Attributes:
     - color = blue
 To Attributes:
     - color = red
 
 --------------------------------------------------
-Transform OtherTransform (unnamed)
+Transform OtherTransform (cacheable)
 --------------------------------------------------
-Type: OtherTransform (cacheable)
+From Attributes:
+    - shape = square
+To Attributes:
+    - shape = circle
+""")
+    }
+
+    def "if named transform is registered by buildscript, task reports it"() {
+        given:
+        buildFile << """
+            ${defineAttributes()}
+            ${defineEmptyTransform()}
+
+            dependencies {
+                registerTransform(EmptyTransform) {
+                    from.attribute(color, "blue")
+                    to.attribute(color, "red")
+                }
+
+                registerTransform("myTransform", EmptyTransform) {
+                    from.attribute(shape, "square")
+                    to.attribute(shape, "circle")
+                }
+            }
+        """
+
+        when:
+        succeeds ':artifactTransforms'
+
+        then:
+        result.groupedOutput.task(":artifactTransforms").assertOutputContains("""--------------------------------------------------
+Transform EmptyTransform
+--------------------------------------------------
+From Attributes:
+    - color = blue
+To Attributes:
+    - color = red
+
+--------------------------------------------------
+Transform myTransform
+--------------------------------------------------
+Type: EmptyTransform
 From Attributes:
     - shape = square
 To Attributes:

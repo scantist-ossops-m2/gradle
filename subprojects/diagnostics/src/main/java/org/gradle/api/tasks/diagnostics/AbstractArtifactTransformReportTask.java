@@ -138,4 +138,3 @@ public abstract class AbstractArtifactTransformReportTask extends DefaultTask im
         return factory.buildForProject(project);
     }
 }
-// TODO: Be sure to report on Cacheability

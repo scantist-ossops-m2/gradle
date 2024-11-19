@@ -67,8 +67,12 @@ public final class ConsoleArtifactTransformReportRenderer extends AbstractArtifa
     private void writeArtifactTransformNameHeader(ReportArtifactTransform artifactTransform) {
         printHeader(() -> {
             output.style(StyledTextOutput.Style.Normal).text("Transform ");
-            output.style(StyledTextOutput.Style.Header).text(artifactTransform.getName());
-            output.println();
+            output.style(StyledTextOutput.Style.Header).text(artifactTransform.getDisplayName());
+            if (artifactTransform.isCacheable()) {
+                output.style(StyledTextOutput.Style.Description).println(" (cacheable)");
+            } else {
+                newLine();
+            }
         });
     }
 
@@ -80,12 +84,9 @@ public final class ConsoleArtifactTransformReportRenderer extends AbstractArtifa
     }
 
     private void writeOtherInfo(ReportArtifactTransform artifactTransform) {
-        output.style(StyledTextOutput.Style.Description).text("Type: ");
-        output.style(StyledTextOutput.Style.Normal).text(artifactTransform.getTransformClass().getName());
-        if (artifactTransform.isCacheable()) {
-            output.style(StyledTextOutput.Style.Description).println(" (cacheable)");
-        } else {
-            newLine();
+        if (artifactTransform.isNamed()) {
+            output.style(StyledTextOutput.Style.Description).text("Type: ");
+            output.style(StyledTextOutput.Style.Normal).println(artifactTransform.getTransformClass().getName());
         }
     }
 

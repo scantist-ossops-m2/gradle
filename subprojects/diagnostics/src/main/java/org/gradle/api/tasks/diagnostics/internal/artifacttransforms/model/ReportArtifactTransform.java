@@ -44,10 +44,6 @@ public final class ReportArtifactTransform {
         this.cacheable = cacheable;
     }
 
-    public String getName() {
-        return (name != null) ? name : transformClass.getSimpleName() + " (unnamed)";
-    }
-
     @Nullable
     public String getDescription() {
         return description;
@@ -67,5 +63,13 @@ public final class ReportArtifactTransform {
 
     public boolean isCacheable() {
         return cacheable;
+    }
+
+    public boolean isNamed() {
+        return name != null;
+    }
+
+    public String getDisplayName() {
+        return (name != null) ? name : transformClass.getSimpleName();
     }
 }
