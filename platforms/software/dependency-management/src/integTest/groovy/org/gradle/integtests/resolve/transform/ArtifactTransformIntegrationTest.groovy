@@ -16,8 +16,6 @@
 
 package org.gradle.integtests.resolve.transform
 
-import org.gradle.api.GradleScriptException
-import org.gradle.api.artifacts.transform.VariantTransformConfigurationException
 import org.gradle.integtests.fixtures.AbstractHttpDependencyResolutionTest
 import org.gradle.integtests.fixtures.BuildOperationsFixture
 import org.gradle.integtests.fixtures.ToBeFixedForConfigurationCache
