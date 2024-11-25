@@ -17,8 +17,8 @@
 package org.gradle.api.internal.tasks.testing;
 
 import org.gradle.api.NonNullApi;
-import org.gradle.api.internal.tasks.testing.operations.TestListenerBuildOperationAdapter;
 import org.gradle.api.internal.tasks.testing.results.StateTrackingTestResultProcessor;
+import org.gradle.api.internal.tasks.testing.results.TestListenerInternal;
 import org.gradle.api.tasks.testing.GroupTestEventReporter;
 import org.gradle.api.tasks.testing.TestEventReporterFactory;
 import org.gradle.internal.id.IdGenerator;
@@ -26,9 +26,9 @@ import org.gradle.internal.id.LongIdGenerator;
 
 @NonNullApi
 public final class DefaultTestEventReporterFactory implements TestEventReporterFactory {
-    private final TestListenerBuildOperationAdapter testListenerBuildOperationAdapter;
+    private final TestListenerInternal testListenerBuildOperationAdapter;
 
-    public DefaultTestEventReporterFactory(TestListenerBuildOperationAdapter testListenerBuildOperationAdapter) {
+    public DefaultTestEventReporterFactory(TestListenerInternal testListenerBuildOperationAdapter) {
         this.testListenerBuildOperationAdapter = testListenerBuildOperationAdapter;
     }
 

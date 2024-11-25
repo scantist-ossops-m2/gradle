@@ -26,6 +26,7 @@ import org.gradle.api.tasks.testing.TestResult;
 import org.gradle.internal.operations.BuildOperationDescriptor;
 import org.gradle.internal.operations.BuildOperationIdFactory;
 import org.gradle.internal.operations.BuildOperationListener;
+import org.gradle.internal.operations.BuildOperationListenerManager;
 import org.gradle.internal.operations.CurrentBuildOperationRef;
 import org.gradle.internal.operations.OperationFinishEvent;
 import org.gradle.internal.operations.OperationIdentifier;
@@ -49,8 +50,8 @@ public class TestListenerBuildOperationAdapter implements TestListenerInternal {
     private final BuildOperationListener listener;
     private final BuildOperationIdFactory buildOperationIdFactory;
 
-    public TestListenerBuildOperationAdapter(BuildOperationListener listener, BuildOperationIdFactory buildOperationIdFactory) {
-        this.listener = listener;
+    public TestListenerBuildOperationAdapter(BuildOperationListenerManager listener, BuildOperationIdFactory buildOperationIdFactory) {
+        this.listener = listener.getBroadcaster();
         this.buildOperationIdFactory = buildOperationIdFactory;
     }
 
