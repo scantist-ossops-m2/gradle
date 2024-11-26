@@ -905,6 +905,7 @@ abstract class AbstractClassGenerator implements ClassGenerator {
             }
             visitor.addDynamicMethods();
             addMissingClosureOverloads(visitor);
+            // TODO: remove in Gradle 10.0
             addSetMethods(visitor);
         }
 
