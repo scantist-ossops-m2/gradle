@@ -398,7 +398,10 @@ class EdgeState implements DependencyGraphEdge {
     private List<NodeState> findTargetNodes() {
         List<NodeState> targetNodes = this.targetNodes;
         if (targetNodes.isEmpty()) {
-            // happens for substituted dependencies
+            // TODO: This code is not correct. At the end of graph traversal,
+            // all edges that are part of the graph should have target nodes.
+            // Going to the target component and grabbing all of its nodes
+            // is certainly not the right thing to do here.
             ComponentState targetComponent = getTargetComponent();
             if (targetComponent != null) {
                 targetNodes = targetComponent.getNodes();

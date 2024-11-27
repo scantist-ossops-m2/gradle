@@ -752,4 +752,235 @@ class ResolutionIssuesIntegrationTest extends AbstractIntegrationSpec {
         succeeds(":resolve")
         outputContains("[producer2-bar, producer1-foo]")
     }
+
+    def "block"() {
+
+        //region repo
+
+        mavenRepo.module("com.squareup.cash.cloud", "cash-cloud-kotlin-uber-bom", "2024.11.21-1732165561-11e1baa")
+            .withModuleMetadata()
+            .adhocVariants()
+            .variant("apiElements", [
+                "org.gradle.category": "platform",
+                "org.gradle.usage": "java-api"
+            ])
+            .publish()
+
+        mavenRepo.module("com.squareup.cash.sessions", "client-misk", "2024.11.21-1732188292-cd56aec")
+            .withModuleMetadata()
+            .withVariant("api") {
+                dependsOn("com.squareup.cash.cloud", "cash-cloud-kotlin-uber-bom", "2024.11.21-1732165561-11e1baa", [
+                    "org.gradle.category": "platform"
+                ])
+                dependsOn("com.squareup.cash.sessions", "common", "2024.11.21-1732188292-cd56aec")
+                dependsOn("com.squareup.misk", "misk", null)
+                dependsOn("com.squareup.misk", "misk-actions", null)
+                dependsOn("com.squareup.misk", "misk-feature", null)
+                dependsOn("com.squareup.misk", "misk-feature", null) {
+                    requestedCapability("com.squareup.misk", "misk-feature-test-fixtures", null)
+                }
+            }
+            .publish()
+
+        mavenRepo.module("com.squareup.cash.sessions", "client-misk-testing", "2024.11.21-1732188292-cd56aec")
+            .withModuleMetadata()
+            .withVariant("api") {
+                dependsOn("com.squareup.cash.sessions", "client-misk", "2024.11.21-1732188292-cd56aec")
+            }
+            .publish()
+
+        mavenRepo.module("com.squareup.cash.sessions", "common", "2024.11.21-1732188292-cd56aec")
+            .withModuleMetadata()
+            .withVariant("api") {
+                dependsOn("com.squareup.cash.cloud", "cash-cloud-kotlin-uber-bom", "2024.11.21-1732165561-11e1baa", [
+                    "org.gradle.category": "platform"
+                ])
+            }
+            .publish()
+
+        mavenRepo.module("com.squareup.misk", "misk-actions", "2024.11.21-1732191448-288067f-cash")
+            .withModuleMetadata()
+            .publish()
+
+        mavenRepo.module("com.squareup.misk", "misk-bom", "2024.11.21-1732191448-288067f-cash")
+            .withModuleMetadata()
+            .adhocVariants()
+            .variant("apiElements", [
+                "org.gradle.category": "platform",
+                "org.gradle.usage": "java-api"
+            ]) {
+                constraint("com.squareup.misk", "misk-actions", "2024.11.21-1732191448-288067f-cash")
+            }
+            .publish()
+
+        mavenRepo.module("com.squareup.misk", "misk-feature", "2024.11.21-1732191448-288067f-cash")
+            .withModuleMetadata()
+            .publish()
+
+        mavenRepo.module("org.junit", "junit-bom", "5.10.2")
+            .withModuleMetadata()
+            .adhocVariants()
+            .variant("apiElements", [
+                "org.gradle.category": "platform",
+                "org.gradle.usage": "java-api"
+            ])
+            .publish()
+
+        mavenRepo.module("org.junit", "junit-bom", "5.11.3")
+            .withModuleMetadata()
+            .adhocVariants()
+            .variant("apiElements", [
+                "org.gradle.category": "platform",
+                "org.gradle.usage": "java-api"
+            ])
+            .publish()
+
+        mavenRepo.module("org.junit.jupiter", "junit-jupiter-params", "5.11.3")
+            .withModuleMetadata()
+            .withVariant("api") {
+                dependsOn("org.junit", "junit-bom", "5.11.3") {
+                    attribute("org.gradle.category", "platform")
+                    endorseStrictVersions = true
+                }
+            }
+            .publish()
+
+        //endregion
+
+        //region misk
+
+        file("misk/misk/build.gradle.kts") << """
+            plugins {
+              id("java-library")
+            }
+
+            dependencies {
+              api(enforcedPlatform(project(":misk-bom")))
+            }
+        """
+
+        file("misk/misk-actions/build.gradle.kts") << """
+            plugins {
+              id("java-library")
+            }
+
+            group = "com.squareup.misk"
+        """
+
+        file("misk/misk-aws2-dynamodb/build.gradle.kts") << """
+            plugins {
+              id("java-library")
+            }
+
+            dependencies {
+              api(enforcedPlatform(project(":misk-bom")))
+            }
+        """
+
+        file("misk/misk-bom/build.gradle.kts") << """
+            plugins {
+              id("java-platform")
+            }
+
+            group = "com.squareup.misk"
+
+            dependencies {
+              constraints {
+                api(project(":misk-actions"))
+                api(project(":misk-feature"))
+              }
+            }
+        """
+
+        file("misk/misk-feature/build.gradle.kts") << """
+            plugins {
+              id("java-library")
+              id("java-test-fixtures")
+            }
+
+            group = "com.squareup.misk"
+
+            dependencies {
+              api(enforcedPlatform(project(":misk-bom")))
+            }
+        """
+
+        file("misk/settings.gradle.kts") << """
+            include(":misk")
+            include(":misk-actions")
+            include(":misk-aws2-dynamodb")
+            include(":misk-bom")
+            include(":misk-feature")
+        """
+
+        //endregion
+
+        file("settings.gradle.kts") << """
+            includeBuild(".")
+
+            dependencyResolutionManagement {
+              repositories {
+                maven(url = "${mavenRepo.uri.toString()}") {
+                  metadataSources {
+                    gradleMetadata()
+                  }
+                }
+              }
+            }
+
+            includeBuild("misk") {
+              dependencySubstitution {
+                substitute(module("com.squareup.misk:misk")).using(project(":misk"))
+                substitute(module("com.squareup.misk:misk-aws2-dynamodb")).using(project(":misk-aws2-dynamodb"))
+              }
+            }
+
+            include(":cash-cloud-kotlin-uber-bom")
+            include(":piggybank")
+        """
+
+        file("cash-cloud-kotlin-uber-bom/build.gradle.kts") << """
+            plugins {
+              id("java-platform")
+            }
+
+            group = "com.squareup.cash.cloud"
+
+            javaPlatform {
+              allowDependencies()
+            }
+
+            dependencies {
+              api(platform("com.squareup.misk:misk-bom:2024.11.21-1732191448-288067f-cash")) {
+                (this as ModuleDependency).doNotEndorseStrictVersions()
+              }
+            }
+        """
+
+        file("piggybank/build.gradle.kts") << """
+            plugins {
+              id("java-library")
+            }
+
+            configurations.all {
+              resolutionStrategy {
+                preferProjectModules()
+              }
+            }
+
+            dependencies {
+                implementation(platform(project(":cash-cloud-kotlin-uber-bom")))
+                implementation(platform("org.junit:junit-bom:5.10.2"))
+                implementation("com.squareup.cash.sessions:client-misk:2024.11.21-1732188292-cd56aec")
+                implementation("com.squareup.misk:misk-aws2-dynamodb")
+                implementation("com.squareup.cash.sessions:client-misk-testing:2024.11.21-1732188292-cd56aec")
+                implementation("org.junit.jupiter:junit-jupiter-params:5.11.3")
+            }
+        """
+
+        expect:
+        executer.noDeprecationChecks()
+        fails(":piggybank:dependencies", "--configuration", "compileClasspath")
+        failure.assertHasErrorOutput("java.lang.AssertionError (no error message)")
+    }
 }
