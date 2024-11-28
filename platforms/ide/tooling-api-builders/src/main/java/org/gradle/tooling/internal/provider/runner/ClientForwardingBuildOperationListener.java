@@ -43,6 +43,9 @@ import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.function.Supplier;
 
+import static org.gradle.tooling.internal.provider.runner.ProblemsProgressEventUtils.createProblemEvent;
+import static org.gradle.tooling.internal.provider.runner.ProblemsProgressEventUtils.createProblemSummaryEvent;
+
 /**
  * Build listener that forwards all receiving events to the client via the provided {@code ProgressEventConsumer} instance.
  *
@@ -78,9 +81,21 @@ class ClientForwardingBuildOperationListener implements BuildOperationListener {
         if (problemsRequested) {
             Object details = progressEvent.getDetails();
             if (details instanceof DefaultProblemProgressDetails) {
-                eventConsumer.progress(ProblemsProgressEventUtils.createProblemEvent(eventConsumer.findStartedParentId(buildOperationId), (DefaultProblemProgressDetails) details, operationIdentifierSupplier));
+                eventConsumer.progress(
+                    createProblemEvent(
+                        eventConsumer.findStartedParentId(buildOperationId),
+                        (DefaultProblemProgressDetails) details,
+                        operationIdentifierSupplier
+                    )
+                );
             } else if (details instanceof DefaultProblemsSummaryProgressDetails) {
-                eventConsumer.progress(ProblemsProgressEventUtils.createProblemSummaryEvent(eventConsumer.findStartedParentId(buildOperationId), (DefaultProblemsSummaryProgressDetails) details, operationIdentifierSupplier));
+                eventConsumer.progress(
+                    createProblemSummaryEvent(
+                        eventConsumer.findStartedParentId(buildOperationId),
+                        (DefaultProblemsSummaryProgressDetails) details,
+                        operationIdentifierSupplier
+                    )
+                );
             }
         }
     }
