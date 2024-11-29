@@ -1194,6 +1194,9 @@ public class BuildProgressListenerAdapter implements InternalBuildProgressListen
         }
         List<Problem> clientProblems = new ArrayList<>(problemDetails.size());
         for (InternalBasicProblemDetailsVersion3 problemDetail : problemDetails) {
+            if (problemDetail == null) { // Should not happen, but with some older snapshot versions we see this.
+                continue;
+            }
             clientProblems.add(createProblemReport(problemDetail));
         }
         if (origFailure instanceof InternalTestAssertionFailure) {
