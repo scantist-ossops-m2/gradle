@@ -15,6 +15,8 @@
  */
 package org.gradle.process;
 
+import org.gradle.api.provider.Property;
+import org.gradle.internal.instrumentation.api.annotations.ReplacesEagerProperty;
 import org.gradle.internal.instrumentation.api.annotations.ToBeReplacedByLazyProperty;
 
 import java.io.File;
@@ -29,23 +31,8 @@ public interface ProcessForkOptions {
      *
      * @return The executable.
      */
-    @ToBeReplacedByLazyProperty
-    String getExecutable();
-
-    /**
-     * Sets the name of the executable to use.
-     *
-     * @param executable The executable. Must not be null.
-     * @since 4.0
-     */
-    void setExecutable(String executable);
-
-    /**
-     * Sets the name of the executable to use.
-     *
-     * @param executable The executable. Must not be null.
-     */
-    void setExecutable(Object executable);
+    @ReplacesEagerProperty(adapter = ProcessForkOptionsAdapters.ExecutableAdapter.class)
+    Property<String> getExecutable();
 
     /**
      * Sets the name of the executable to use.

@@ -19,6 +19,7 @@ package org.gradle.process.internal;
 import org.gradle.api.Action;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.internal.provider.Providers;
 import org.gradle.api.jvm.ModularitySpec;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.ListProperty;
@@ -52,6 +53,7 @@ public class DefaultJavaExecAction implements JavaExecAction {
     private final Property<InputStream> standardInput;
     private final Property<OutputStream> standardOutput;
     private final Property<OutputStream> errorOutput;
+    private final Property<String> executable;
 
     @Inject
     public DefaultJavaExecAction(ObjectFactory objectFactory, JavaExecHandleBuilder javaExecHandleBuilder) {
@@ -60,6 +62,7 @@ public class DefaultJavaExecAction implements JavaExecAction {
         this.standardInput = objectFactory.property(InputStream.class);
         this.standardOutput = objectFactory.property(OutputStream.class);
         this.errorOutput = objectFactory.property(OutputStream.class);
+        this.executable = objectFactory.property(String.class);
     }
 
     @Override
@@ -72,6 +75,9 @@ public class DefaultJavaExecAction implements JavaExecAction {
         }
         if (getErrorOutput().isPresent()) {
             javaExecHandleBuilder.setErrorOutput(getErrorOutput().get());
+        }
+        if (getExecutable().isPresent()) {
+            javaExecHandleBuilder.setExecutable(getExecutable().get());
         }
 
         ExecHandle execHandle = javaExecHandleBuilder.build();
@@ -278,23 +284,16 @@ public class DefaultJavaExecAction implements JavaExecAction {
     }
 
     @Override
-    public String getExecutable() {
-        return javaExecHandleBuilder.getExecutable();
+    public Property<String> getExecutable() {
+        return executable;
     }
-
-    @Override
-    public void setExecutable(String executable) {
-        javaExecHandleBuilder.setExecutable(executable);
-    }
-
-    @Override
-    public void setExecutable(Object executable) {
-        javaExecHandleBuilder.setExecutable(executable);
-    }
-
     @Override
     public ProcessForkOptions executable(Object executable) {
-        javaExecHandleBuilder.setExecutable(executable);
+        if (executable instanceof Provider) {
+            getExecutable().set(((Provider<?>) executable).map(Object::toString));
+        } else {
+            getExecutable().set(Providers.changing((Providers.SerializableCallable<String>) executable::toString));
+        }
         return this;
     }
 

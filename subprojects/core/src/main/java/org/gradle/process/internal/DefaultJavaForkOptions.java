@@ -55,7 +55,7 @@ public class DefaultJavaForkOptions extends DefaultProcessForkOptions implements
         PathToFileResolver resolver,
         FileCollectionFactory fileCollectionFactory
     ) {
-        super(resolver);
+        super(objectFactory, resolver);
         this.fileCollectionFactory = fileCollectionFactory;
         this.jvmArgs = objectFactory.listProperty(String.class);
         this.jvmArgumentProviders = objectFactory.listProperty(CommandLineArgumentProvider.class);
@@ -206,7 +206,7 @@ public class DefaultJavaForkOptions extends DefaultProcessForkOptions implements
         JvmOptions copy = new JvmOptions(fileCollectionFactory);
         copy.copyFrom(this);
         return new EffectiveJavaForkOptions(
-            getExecutable(),
+            getExecutable().get(),
             getWorkingDir(),
             getEnvironment(),
             copy

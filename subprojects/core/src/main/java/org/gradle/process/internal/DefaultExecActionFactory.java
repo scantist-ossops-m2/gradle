@@ -121,7 +121,7 @@ public class DefaultExecActionFactory implements ExecFactory {
     @Override
     public JavaForkOptionsInternal newDecoratedJavaForkOptions() {
         final DefaultJavaForkOptions forkOptions = instantiator.newInstance(DefaultJavaForkOptions.class, objectFactory, fileResolver, fileCollectionFactory);
-        forkOptions.setExecutable(Jvm.current().getJavaExecutable());
+        forkOptions.getExecutable().set(Jvm.current().getJavaExecutable().getAbsolutePath());
         return forkOptions;
     }
 
@@ -129,7 +129,7 @@ public class DefaultExecActionFactory implements ExecFactory {
     public JavaForkOptionsInternal newJavaForkOptions() {
         final DefaultJavaForkOptions forkOptions = objectFactory.newInstance(DefaultJavaForkOptions.class, objectFactory, fileResolver, fileCollectionFactory);
         if (forkOptions.getExecutable() == null) {
-            forkOptions.setExecutable(Jvm.current().getJavaExecutable());
+            forkOptions.getExecutable().set(Jvm.current().getJavaExecutable().getAbsolutePath());
         }
         return forkOptions;
     }
@@ -146,7 +146,7 @@ public class DefaultExecActionFactory implements ExecFactory {
 
     public JavaExecAction newDecoratedJavaExecAction() {
         final JavaForkOptionsInternal forkOptions = newDecoratedJavaForkOptions();
-        forkOptions.setExecutable(Jvm.current().getJavaExecutable());
+        forkOptions.getExecutable().set(Jvm.current().getJavaExecutable().getAbsolutePath());
         DefaultJavaExecAction javaExecAction = instantiator.newInstance(DefaultJavaExecAction.class, objectFactory, newJavaExec());
         ExecHandleListener listener = getExecHandleListener();
         if (listener != null) {

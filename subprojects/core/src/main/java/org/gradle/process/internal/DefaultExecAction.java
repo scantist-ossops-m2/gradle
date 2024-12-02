@@ -16,8 +16,10 @@
 
 package org.gradle.process.internal;
 
+import org.gradle.api.internal.provider.Providers;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
 import org.gradle.process.CommandLineArgumentProvider;
 import org.gradle.process.ExecResult;
 import org.gradle.process.ProcessForkOptions;
@@ -41,6 +43,7 @@ public class DefaultExecAction implements ExecAction {
     private final Property<InputStream> standardInput;
     private final Property<OutputStream> standardOutput;
     private final Property<OutputStream> errorOutput;
+    private final Property<String> executable;
 
     @Inject
     public DefaultExecAction(ObjectFactory objectFactory, ClientExecHandleBuilder execHandleBuilder) {
@@ -49,6 +52,7 @@ public class DefaultExecAction implements ExecAction {
         this.standardInput = objectFactory.property(InputStream.class);
         this.standardOutput = objectFactory.property(OutputStream.class);
         this.errorOutput = objectFactory.property(OutputStream.class);
+        this.executable = objectFactory.property(String.class);
     }
 
     @Override
@@ -62,6 +66,9 @@ public class DefaultExecAction implements ExecAction {
         if (getErrorOutput().isPresent()) {
             execHandleBuilder.setErrorOutput(getErrorOutput().get());
         }
+        if (getExecutable().isPresent()) {
+            execHandleBuilder.setExecutable(getExecutable().get());
+        }
 
         ExecHandle execHandle = execHandleBuilder.build();
         ExecResult execResult = execHandle.start().waitForFinish();
@@ -72,23 +79,17 @@ public class DefaultExecAction implements ExecAction {
     }
 
     @Override
-    public String getExecutable() {
-        return execHandleBuilder.getExecutable();
-    }
-
-    @Override
-    public void setExecutable(String executable) {
-        execHandleBuilder.setExecutable(executable);
-    }
-
-    @Override
-    public void setExecutable(Object executable) {
-        execHandleBuilder.setExecutable(executable);
+    public Property<String> getExecutable() {
+        return executable;
     }
 
     @Override
     public ProcessForkOptions executable(Object executable) {
-        execHandleBuilder.setExecutable(executable);
+        if (executable instanceof Provider) {
+            getExecutable().set(((Provider<?>) executable).map(Object::toString));
+        } else {
+            getExecutable().set(Providers.changing((Providers.SerializableCallable<String>) executable::toString));
+        }
         return this;
     }
 

@@ -50,7 +50,6 @@ public abstract class RunTestExecutable extends AbstractExecTask<RunTestExecutab
     protected void exec() {
         // Make convention mapping work
         getOutputDir().mkdirs();
-        setExecutable(getExecutable());
         setWorkingDir(getOutputDir());
 
         try {

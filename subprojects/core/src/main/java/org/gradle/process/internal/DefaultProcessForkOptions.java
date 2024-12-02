@@ -16,6 +16,10 @@
 package org.gradle.process.internal;
 
 import com.google.common.collect.Maps;
+import org.gradle.api.internal.provider.Providers;
+import org.gradle.api.model.ObjectFactory;
+import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
 import org.gradle.internal.file.PathToFileResolver;
 import org.gradle.process.ProcessForkOptions;
 
@@ -25,32 +29,27 @@ import java.util.Map;
 
 public class DefaultProcessForkOptions implements ProcessForkOptions {
     protected final PathToFileResolver resolver;
-    private Object executable;
+    private final Property<String> executable;
     private File workingDir;
     private Map<String, Object> environment;
 
-    public DefaultProcessForkOptions(PathToFileResolver resolver) {
+    public DefaultProcessForkOptions(ObjectFactory objectFactory, PathToFileResolver resolver) {
         this.resolver = resolver;
+        this.executable = objectFactory.property(String.class);
     }
 
     @Override
-    public String getExecutable() {
-        return executable == null ? null : executable.toString();
-    }
-
-    @Override
-    public void setExecutable(String executable) {
-        this.executable = executable;
-    }
-
-    @Override
-    public void setExecutable(Object executable) {
-        this.executable = executable;
+    public Property<String> getExecutable() {
+        return executable;
     }
 
     @Override
     public ProcessForkOptions executable(Object executable) {
-        setExecutable(executable);
+        if (executable instanceof Provider) {
+            getExecutable().set(((Provider<?>) executable).map(Object::toString));
+        } else {
+            getExecutable().set(Providers.changing((Providers.SerializableCallable<String>) executable::toString));
+        }
         return this;
     }
 
@@ -121,7 +120,7 @@ public class DefaultProcessForkOptions implements ProcessForkOptions {
 
     @Override
     public ProcessForkOptions copyTo(ProcessForkOptions target) {
-        target.setExecutable(executable);
+        target.getExecutable().set(getExecutable());
         target.setWorkingDir(getWorkingDir());
         target.setEnvironment(getEnvironment());
         return this;

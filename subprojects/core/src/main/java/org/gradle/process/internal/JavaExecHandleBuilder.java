@@ -60,7 +60,7 @@ import static org.gradle.process.internal.util.LongCommandLineDetectionUtil.hasC
  * Use {@link JavaExecHandleFactory} instead.
  */
 @NonNullApi
-public class JavaExecHandleBuilder implements BaseExecHandleBuilder, ProcessArgumentsSpec.HasExecutable {
+public class JavaExecHandleBuilder implements BaseExecHandleBuilder {
 
     private static final Logger LOGGER = Logging.getLogger(JavaExecHandleBuilder.class);
 
@@ -93,7 +93,6 @@ public class JavaExecHandleBuilder implements BaseExecHandleBuilder, ProcessArgu
         this.javaOptions = javaOptions;
         this.modularity = new DefaultModularitySpec(objectFactory);
         this.execHandleBuilder = execHandleBuilder;
-        setExecutable(javaOptions.getExecutable());
     }
 
     public Provider<List<String>> getAllJvmArgs() {
@@ -257,18 +256,16 @@ public class JavaExecHandleBuilder implements BaseExecHandleBuilder, ProcessArgu
         javaOptions.debugOptions(action);
     }
 
-    @Override
     public String getExecutable() {
-        return javaOptions.getExecutable();
+        return javaOptions.getExecutable().get();
     }
 
-    @Override
-    public void setExecutable(Object executable) {
-        javaOptions.setExecutable(executable);
+    public void setExecutable(File executable) {
+        setExecutable(executable.getAbsolutePath());
     }
 
     public void setExecutable(String executable) {
-        javaOptions.setExecutable(executable);
+        javaOptions.getExecutable().set(executable);
     }
 
     @Nullable

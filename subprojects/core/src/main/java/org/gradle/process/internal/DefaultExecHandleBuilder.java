@@ -17,6 +17,7 @@
 package org.gradle.process.internal;
 
 import org.gradle.api.model.ObjectFactory;
+import org.gradle.api.provider.Property;
 import org.gradle.process.CommandLineArgumentProvider;
 import org.gradle.process.ProcessForkOptions;
 
@@ -31,30 +32,20 @@ import java.util.Map;
  */
 @SuppressWarnings("DeprecatedIsStillUsed")
 @Deprecated
-public class DefaultExecHandleBuilder extends AbstractExecHandleBuilder implements ExecHandleBuilder, ProcessArgumentsSpec.HasExecutable {
+public class DefaultExecHandleBuilder extends AbstractExecHandleBuilder implements ExecHandleBuilder {
 
     public DefaultExecHandleBuilder(ObjectFactory objectFactory, ClientExecHandleBuilder delegate) {
         super(objectFactory, delegate);
     }
 
     @Override
-    public String getExecutable() {
-        return delegate.getExecutable();
-    }
-
-    @Override
-    public void setExecutable(String executable) {
-        delegate.setExecutable(executable);
-    }
-
-    @Override
-    public void setExecutable(Object executable) {
-        delegate.setExecutable(executable);
+    public Property<String> getExecutable() {
+        return super.getExecutable();
     }
 
     @Override
     public DefaultExecHandleBuilder executable(Object executable) {
-        delegate.setExecutable(executable);
+        super.executable(executable);
         return this;
     }
 
