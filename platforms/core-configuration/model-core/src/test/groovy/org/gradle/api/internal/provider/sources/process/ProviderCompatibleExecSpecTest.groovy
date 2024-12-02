@@ -36,6 +36,6 @@ class ProviderCompatibleExecSpecTest extends ProviderCompatibleBaseExecSpecTestB
 
     @Override
     protected ProviderCompatibleExecSpec createSpecUnderTest() {
-        return new ProviderCompatibleExecSpec(TestUtil.newInstance(DefaultExecSpec, TestFiles.pathToFileResolver(tmpDir.testDirectory)))
+        return TestUtil.newInstance(ProviderCompatibleExecSpec, TestUtil.newInstance(DefaultExecSpec, TestUtil.objectFactory(), TestFiles.pathToFileResolver(tmpDir.testDirectory)))
     }
 }

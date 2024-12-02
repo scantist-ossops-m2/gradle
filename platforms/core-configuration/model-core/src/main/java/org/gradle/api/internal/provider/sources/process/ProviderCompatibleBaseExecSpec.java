@@ -46,16 +46,6 @@ abstract class ProviderCompatibleBaseExecSpec implements DelegatingBaseExecSpec 
     }
 
     @Override
-    public void setEnvironment(Map<String, ?> environmentVariables) {
-        fullEnvironment = new HashMap<>(environmentVariables);
-        // We are replacing the environment completely, there is no need to keep previous additions.
-        additionalEnvVars.clear();
-        // Keep the delegate's view of environment consistent to make sure getEnvironment and
-        // copyTo work properly.
-        DelegatingBaseExecSpec.super.setEnvironment(fullEnvironment);
-    }
-
-    @Override
     public ProcessForkOptions environment(Map<String, ?> environmentVariables) {
         getMapForAppends().putAll(environmentVariables);
         // Keep the delegate's view of environment consistent to make sure getEnvironment and
