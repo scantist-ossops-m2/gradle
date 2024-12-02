@@ -32,7 +32,6 @@ import org.gradle.api.internal.DomainObjectContext;
 import org.gradle.api.internal.artifacts.ComponentMetadataProcessorFactory;
 import org.gradle.api.internal.artifacts.ComponentSelectionRulesInternal;
 import org.gradle.api.internal.artifacts.ComponentSelectorConverter;
-import org.gradle.api.internal.artifacts.DefaultModuleIdentifier;
 import org.gradle.api.internal.artifacts.DefaultResolverResults;
 import org.gradle.api.internal.artifacts.DependencySubstitutionInternal;
 import org.gradle.api.internal.artifacts.ImmutableModuleIdentifierFactory;
@@ -43,7 +42,7 @@ import org.gradle.api.internal.artifacts.capability.CapabilitySelectorSerializer
 import org.gradle.api.internal.artifacts.configurations.ConfigurationInternal;
 import org.gradle.api.internal.artifacts.configurations.ConflictResolution;
 import org.gradle.api.internal.artifacts.configurations.dynamicversion.CachePolicy;
-import org.gradle.api.internal.artifacts.dependencies.DefaultMutableVersionConstraint;
+import org.gradle.api.internal.artifacts.dependencies.DefaultImmutableVersionConstraint;
 import org.gradle.api.internal.artifacts.dsl.dependencies.DependencyLockingProvider;
 import org.gradle.api.internal.artifacts.dsl.dependencies.DependencyLockingState;
 import org.gradle.api.internal.artifacts.ivyservice.ivyresolve.ComponentResolvers;
@@ -542,7 +541,7 @@ public class ResolutionExecutor {
 
     private ImmutableList<? extends DependencyMetadata> getAllSyntheticDependencies(ResolutionParameters params) {
         if (!params.isDependencyLockingEnabled()) {
-            return params.getSyntheticDependencies();
+            return getVersionLocksAsConstraints(params.getModuleVersionLocks());
         }
 
         if (params.isFailingOnDynamicVersions()) {
@@ -555,10 +554,13 @@ public class ResolutionExecutor {
             );
         }
 
-        return getSyntheticDependenciesWithDependencyLockingConstraints(params);
+        return ImmutableList.<DependencyMetadata>builder()
+            .addAll(getDependencyLockingConstraints(params))
+            .addAll(getVersionLocksAsConstraints(params.getModuleVersionLocks()))
+            .build();
     }
 
-    private ImmutableList<DependencyMetadata> getSyntheticDependenciesWithDependencyLockingConstraints(ResolutionParameters params) {
+    private ImmutableList<DependencyMetadata> getDependencyLockingConstraints(ResolutionParameters params) {
         DependencyLockingState dependencyLockingState = dependencyLockingProvider.loadLockState(
             params.getDependencyLockingId(),
             params.getResolutionHost().displayName()
@@ -567,34 +569,44 @@ public class ResolutionExecutor {
         boolean strict = dependencyLockingState.mustValidateLockState();
         Set<ModuleComponentIdentifier> lockedDependencies = dependencyLockingState.getLockedDependencies();
 
-        ImmutableList<? extends DependencyMetadata> syntheticDependencies = params.getSyntheticDependencies();
-        ImmutableList.Builder<DependencyMetadata> result = ImmutableList.builderWithExpectedSize(
-            syntheticDependencies.size() + lockedDependencies.size()
-        );
-
+        ImmutableList.Builder<DependencyMetadata> constraints = ImmutableList.builderWithExpectedSize(lockedDependencies.size());
         for (ModuleComponentIdentifier lockedDependency : lockedDependencies) {
             String lockedVersion = lockedDependency.getVersion();
             VersionConstraint versionConstraint = strict
-                ? DefaultMutableVersionConstraint.withStrictVersion(lockedVersion)
-                : DefaultMutableVersionConstraint.withVersion(lockedVersion);
+                ? DefaultImmutableVersionConstraint.strictly(lockedVersion)
+                : DefaultImmutableVersionConstraint.of(lockedVersion);
 
             ModuleComponentSelector selector = DefaultModuleComponentSelector.newSelector(
-                DefaultModuleIdentifier.newId(lockedDependency.getGroup(), lockedDependency.getModule()),
+                lockedDependency.getModuleIdentifier(),
                 versionConstraint
             );
 
-            String lockReason = strict ?
-                "dependency was locked to version '" + lockedVersion + "'" :
-                "dependency was locked to version '" + lockedVersion + "' (update/lenient mode)";
-
-            result.add(new LocalComponentDependencyMetadata(
-                selector, null, Collections.emptyList(), Collections.emptyList(),
-                false, false, false, true, false, true, lockReason
-            ));
+            constraints.add(asLockConstraint(selector, "Dependency version enforced by Dependency Locking"));
         }
+        return constraints.build();
+    }
 
-        result.addAll(syntheticDependencies);
-        return result.build();
+    private static ImmutableList<DependencyMetadata> getVersionLocksAsConstraints(ImmutableList<ResolutionParameters.ModuleVersionLock> locks) {
+        ImmutableList.Builder<DependencyMetadata> constraints = ImmutableList.builderWithExpectedSize(locks.size());
+        for (ResolutionParameters.ModuleVersionLock lock : locks) {
+            VersionConstraint versionConstraint =
+                DefaultImmutableVersionConstraint.strictly(lock.getVersion());
+
+            ModuleComponentSelector selector = DefaultModuleComponentSelector.newSelector(
+                lock.getModuleId(),
+                versionConstraint
+            );
+
+            constraints.add(asLockConstraint(selector, lock.getReason()));
+        }
+        return constraints.build();
+    }
+
+    private static LocalComponentDependencyMetadata asLockConstraint(ModuleComponentSelector selector, String reason) {
+        return new LocalComponentDependencyMetadata(
+            selector, null, Collections.emptyList(), Collections.emptyList(),
+            false, false, false, true, false, true, reason
+        );
     }
 
 }

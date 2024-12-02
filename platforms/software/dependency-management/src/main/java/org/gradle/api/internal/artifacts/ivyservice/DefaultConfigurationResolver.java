@@ -17,15 +17,12 @@
 package org.gradle.api.internal.artifacts.ivyservice;
 
 import com.google.common.collect.ImmutableList;
-import org.gradle.api.artifacts.DependencyConstraint;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedConfiguration;
-import org.gradle.api.artifacts.component.ModuleComponentSelector;
 import org.gradle.api.attributes.Attribute;
 import org.gradle.api.attributes.AttributeContainer;
 import org.gradle.api.internal.artifacts.ComponentModuleMetadataHandlerInternal;
 import org.gradle.api.internal.artifacts.ConfigurationResolver;
-import org.gradle.api.internal.artifacts.DefaultModuleIdentifier;
 import org.gradle.api.internal.artifacts.DefaultResolverResults;
 import org.gradle.api.internal.artifacts.RepositoriesSupplier;
 import org.gradle.api.internal.artifacts.ResolverResults;
@@ -46,12 +43,9 @@ import org.gradle.api.internal.attributes.AttributeDesugaring;
 import org.gradle.api.internal.attributes.AttributeSchemaServices;
 import org.gradle.api.internal.attributes.immutable.artifact.ImmutableArtifactTypeRegistry;
 import org.gradle.api.internal.project.ProjectIdentity;
-import org.gradle.internal.component.external.model.DefaultModuleComponentSelector;
 import org.gradle.internal.component.external.model.ImmutableCapabilities;
 import org.gradle.internal.component.local.model.LocalComponentGraphResolveState;
 import org.gradle.internal.component.local.model.LocalVariantGraphResolveState;
-import org.gradle.internal.component.model.DependencyMetadata;
-import org.gradle.internal.component.model.LocalComponentDependencyMetadata;
 import org.gradle.internal.deprecation.DeprecationLogger;
 import org.gradle.internal.model.CalculatedValue;
 import org.gradle.util.Path;
@@ -132,11 +126,11 @@ public class DefaultConfigurationResolver implements ConfigurationResolver {
         return repositoriesSupplier.get();
     }
 
-    private ResolutionParameters getResolutionParameters(ConfigurationInternal configuration, boolean includeSyntheticDependencies) {
+    private ResolutionParameters getResolutionParameters(ConfigurationInternal configuration, boolean includeConsistentResolutionLocks) {
         ResolutionStrategyInternal resolutionStrategy = configuration.getResolutionStrategy();
 
         RootComponentMetadataBuilder.RootComponentState rootComponent = configuration.toRootComponent();
-        ImmutableList<? extends DependencyMetadata> syntheticDependencies = includeSyntheticDependencies ? getConsistentResolutionConstraints(configuration) : ImmutableList.of();
+        ImmutableList<ResolutionParameters.ModuleVersionLock> moduleVersionLocks = includeConsistentResolutionLocks ? configuration.getConsistentResolutionVersionLocks() : ImmutableList.of();
         ImmutableArtifactTypeRegistry immutableArtifactTypeRegistry = attributeSchemaServices.getArtifactTypeRegistryFactory().create(artifactTypeRegistry);
         ImmutableModuleReplacements moduleReplacements = componentModuleMetadataHandler.getModuleReplacements();
         ConfigurationFailureResolutions failureResolutions = new ConfigurationFailureResolutions(configuration.getDomainObjectContext().getProjectIdentity(), configuration.getName());
@@ -145,7 +139,7 @@ public class DefaultConfigurationResolver implements ConfigurationResolver {
             configuration.getResolutionHost(),
             rootComponent.getRootComponent(),
             rootComponent.getRootVariant(),
-            syntheticDependencies,
+            moduleVersionLocks,
             resolutionStrategy.getSortOrder(),
             configuration.getConfigurationIdentity(),
             immutableArtifactTypeRegistry,
@@ -159,21 +153,6 @@ public class DefaultConfigurationResolver implements ConfigurationResolver {
             resolutionStrategy.isFailingOnChangingVersions(),
             failureResolutions
         );
-    }
-
-    private static ImmutableList<? extends DependencyMetadata> getConsistentResolutionConstraints(ConfigurationInternal configuration) {
-        ImmutableList<DependencyConstraint> consistentResolutionConstraints = configuration.getConsistentResolutionConstraints();
-        ImmutableList.Builder<DependencyMetadata> builder = ImmutableList.builderWithExpectedSize(consistentResolutionConstraints.size());
-        for (DependencyConstraint dc : consistentResolutionConstraints) {
-            ModuleComponentSelector selector = DefaultModuleComponentSelector.newSelector(
-                DefaultModuleIdentifier.newId(dc.getGroup(), dc.getName()), dc.getVersionConstraint()
-            );
-            builder.add(new LocalComponentDependencyMetadata(
-                selector, null, Collections.emptyList(), Collections.emptyList(),
-                false, false, false, true, false, true, dc.getReason()
-            ));
-        }
-        return builder.build();
     }
 
     private static class ConfigurationFailureResolutions implements ResolutionParameters.FailureResolutions {

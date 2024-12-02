@@ -17,7 +17,6 @@ package org.gradle.api.internal.artifacts.configurations;
 
 import com.google.common.collect.ImmutableList;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.DependencyConstraint;
 import org.gradle.api.artifacts.ExcludeRule;
 import org.gradle.api.artifacts.PublishArtifact;
 import org.gradle.api.internal.DomainObjectContext;
@@ -114,10 +113,9 @@ public interface ConfigurationInternal extends ResolveContext, DeprecatableConfi
     RootComponentMetadataBuilder.RootComponentState toRootComponent();
 
     /**
-     * The constraints to be added to the requested dependencies as a result of
-     * consistent resolution.
+     * Version locks to use during resolution as a result of consistent resolution.
      */
-    ImmutableList<DependencyConstraint> getConsistentResolutionConstraints();
+    ImmutableList<ResolutionParameters.ModuleVersionLock> getConsistentResolutionVersionLocks();
 
     /**
      * @implSpec Usage: This method should only be called on resolvable configurations and should throw an exception if

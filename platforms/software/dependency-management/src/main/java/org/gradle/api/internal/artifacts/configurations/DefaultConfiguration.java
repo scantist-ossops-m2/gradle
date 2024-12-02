@@ -38,7 +38,6 @@ import org.gradle.api.artifacts.DependencyConstraintSet;
 import org.gradle.api.artifacts.DependencyResolutionListener;
 import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.artifacts.ExcludeRule;
-import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ProjectDependency;
 import org.gradle.api.artifacts.PublishArtifact;
 import org.gradle.api.artifacts.PublishArtifactSet;
@@ -65,8 +64,8 @@ import org.gradle.api.internal.artifacts.DependencySubstitutionInternal;
 import org.gradle.api.internal.artifacts.ExcludeRuleNotationConverter;
 import org.gradle.api.internal.artifacts.ResolveExceptionMapper;
 import org.gradle.api.internal.artifacts.ResolverResults;
-import org.gradle.api.internal.artifacts.dependencies.DefaultDependencyConstraint;
 import org.gradle.api.internal.artifacts.dependencies.DependencyConstraintInternal;
+import org.gradle.api.internal.artifacts.ivyservice.ResolutionParameters;
 import org.gradle.api.internal.artifacts.ivyservice.TypedResolveException;
 import org.gradle.api.internal.artifacts.ivyservice.moduleconverter.RootComponentMetadataBuilder;
 import org.gradle.api.internal.artifacts.ivyservice.resolutionstrategy.CapabilitiesResolutionInternal;
@@ -94,6 +93,7 @@ import org.gradle.api.problems.internal.InternalProblems;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.specs.Specs;
 import org.gradle.api.tasks.TaskDependency;
+import org.gradle.internal.Actions;
 import org.gradle.internal.Cast;
 import org.gradle.internal.Describables;
 import org.gradle.internal.DisplayName;
@@ -142,6 +142,7 @@ import java.util.stream.StreamSupport;
 
 import static org.gradle.api.internal.artifacts.configurations.ConfigurationInternal.InternalState.GRAPH_RESOLVED;
 import static org.gradle.api.internal.artifacts.configurations.ConfigurationInternal.InternalState.UNRESOLVED;
+import static org.gradle.api.internal.artifacts.result.DefaultResolvedComponentResult.eachElement;
 import static org.gradle.util.internal.ConfigureUtil.configure;
 
 /**
@@ -839,28 +840,34 @@ public abstract class DefaultConfiguration extends AbstractFileCollection implem
     }
 
     @Override
-    public ImmutableList<DependencyConstraint> getConsistentResolutionConstraints() {
+    public ImmutableList<ResolutionParameters.ModuleVersionLock> getConsistentResolutionVersionLocks() {
         if (consistentResolutionSource == null) {
             return ImmutableList.of();
         }
+
         assertThatConsistentResolutionIsPropertyConfigured();
-        return consistentResolutionSource.getIncoming()
-            .getResolutionResult()
-            .getAllComponents()
-            .stream()
-            .map(this::registerConsistentResolutionConstraint)
-            .filter(Objects::nonNull)
-            .collect(ImmutableList.toImmutableList());
+        ResolvedComponentResult root = consistentResolutionSource.getIncoming().getResolutionResult().getRoot();
+
+        ImmutableList.Builder<ResolutionParameters.ModuleVersionLock> locks = ImmutableList.builder();
+        eachElement(root, component -> {
+            if (component.getId() instanceof ModuleComponentIdentifier) {
+                ModuleComponentIdentifier moduleId = (ModuleComponentIdentifier) component.getId();
+                locks.add(new ResolutionParameters.ModuleVersionLock(
+                    moduleId.getModuleIdentifier(),
+                    moduleId.getVersion(),
+                    consistentResolutionReason
+                ));
+            }
+        }, Actions.doNothing(), new HashSet<>());
+        return locks.build();
     }
 
     private void assertThatConsistentResolutionIsPropertyConfigured() {
         if (!consistentResolutionSource.isCanBeResolved()) {
             throw new InvalidUserCodeException("You can't use " + consistentResolutionSource + " as a consistent resolution source for " + this + " because it isn't a resolvable configuration.");
         }
-        assertNoDependencyResolutionConsistencyCycle();
-    }
 
-    private void assertNoDependencyResolutionConsistencyCycle() {
+        // Ensure there are no cycles in the consistent resolution graph.
         Set<ConfigurationInternal> sources = new LinkedHashSet<>();
         ConfigurationInternal src = this;
         while (src != null) {
@@ -870,20 +877,6 @@ public abstract class DefaultConfiguration extends AbstractFileCollection implem
             }
             src = src.getConsistentResolutionSource();
         }
-    }
-
-    @Nullable
-    private DependencyConstraint registerConsistentResolutionConstraint(ResolvedComponentResult result) {
-        if (result.getId() instanceof ModuleComponentIdentifier) {
-            ModuleVersionIdentifier moduleVersion = result.getModuleVersion();
-            DefaultDependencyConstraint constraint = DefaultDependencyConstraint.strictly(
-                moduleVersion.getGroup(),
-                moduleVersion.getName(),
-                moduleVersion.getVersion());
-            constraint.because(consistentResolutionReason);
-            return constraint;
-        }
-        return null;
     }
 
     /**
