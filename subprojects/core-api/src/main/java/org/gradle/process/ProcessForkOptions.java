@@ -15,11 +15,11 @@
  */
 package org.gradle.process;
 
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.internal.instrumentation.api.annotations.ReplacesEagerProperty;
 import org.gradle.internal.instrumentation.api.annotations.ToBeReplacedByLazyProperty;
 
-import java.io.File;
 import java.util.Map;
 
 /**
@@ -47,24 +47,8 @@ public interface ProcessForkOptions {
      *
      * @return The working directory. Never returns null.
      */
-    @ToBeReplacedByLazyProperty
-    File getWorkingDir();
-
-    /**
-     * Sets the working directory for the process.
-     *
-     * @param dir The working directory. Must not be null.
-     * @since 4.0
-     */
-    void setWorkingDir(File dir);
-
-    /**
-     * Sets the working directory for the process. The supplied argument is evaluated as per {@link
-     * org.gradle.api.Project#file(Object)}.
-     *
-     * @param dir The working directory. Must not be null.
-     */
-    void setWorkingDir(Object dir);
+    @ReplacesEagerProperty(adapter = ProcessForkOptionsAdapters.WorkingDirAdapter.class)
+    DirectoryProperty getWorkingDir();
 
     /**
      * Sets the working directory for the process. The supplied argument is evaluated as per {@link

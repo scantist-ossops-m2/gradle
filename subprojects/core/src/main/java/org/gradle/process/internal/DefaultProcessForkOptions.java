@@ -16,6 +16,7 @@
 package org.gradle.process.internal;
 
 import com.google.common.collect.Maps;
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.internal.provider.Providers;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Property;
@@ -23,19 +24,19 @@ import org.gradle.api.provider.Provider;
 import org.gradle.internal.file.PathToFileResolver;
 import org.gradle.process.ProcessForkOptions;
 
-import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
 public class DefaultProcessForkOptions implements ProcessForkOptions {
     protected final PathToFileResolver resolver;
     private final Property<String> executable;
-    private File workingDir;
+    private final DirectoryProperty workingDir;
     private Map<String, Object> environment;
 
     public DefaultProcessForkOptions(ObjectFactory objectFactory, PathToFileResolver resolver) {
         this.resolver = resolver;
         this.executable = objectFactory.property(String.class);
+        this.workingDir = objectFactory.directoryProperty();
     }
 
     @Override
@@ -54,26 +55,17 @@ public class DefaultProcessForkOptions implements ProcessForkOptions {
     }
 
     @Override
-    public File getWorkingDir() {
-        if (workingDir == null) {
-            workingDir = resolver.resolve(".");
-        }
+    public DirectoryProperty getWorkingDir() {
         return workingDir;
     }
 
     @Override
-    public void setWorkingDir(File dir) {
-        this.workingDir = resolver.resolve(dir);
-    }
-
-    @Override
-    public void setWorkingDir(Object dir) {
-        this.workingDir = resolver.resolve(dir);
-    }
-
-    @Override
     public ProcessForkOptions workingDir(Object dir) {
-        setWorkingDir(dir);
+        if (dir instanceof Provider) {
+            getWorkingDir().fileProvider(((Provider<?>) dir).map(resolver::resolve));
+        } else {
+            getWorkingDir().set(resolver.resolve(dir));
+        }
         return this;
     }
 
@@ -121,7 +113,7 @@ public class DefaultProcessForkOptions implements ProcessForkOptions {
     @Override
     public ProcessForkOptions copyTo(ProcessForkOptions target) {
         target.getExecutable().set(getExecutable());
-        target.setWorkingDir(getWorkingDir());
+        target.getWorkingDir().set(getWorkingDir());
         target.setEnvironment(getEnvironment());
         return this;
     }

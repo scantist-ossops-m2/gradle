@@ -105,7 +105,7 @@ public class DefaultExecActionFactory implements ExecFactory {
     }
 
     public ExecAction newDecoratedExecAction() {
-        DefaultExecAction execAction = instantiator.newInstance(DefaultExecAction.class, objectFactory, execHandleFactory.newExecHandleBuilder());
+        DefaultExecAction execAction = instantiator.newInstance(DefaultExecAction.class, objectFactory, fileResolver, execHandleFactory.newExecHandleBuilder());
         ExecHandleListener listener = getExecHandleListener();
         if (listener != null) {
             execAction.listener(listener);
@@ -115,7 +115,7 @@ public class DefaultExecActionFactory implements ExecFactory {
 
     @Override
     public ExecAction newExecAction() {
-        return objectFactory.newInstance(DefaultExecAction.class, objectFactory, execHandleFactory.newExecHandleBuilder());
+        return objectFactory.newInstance(DefaultExecAction.class, objectFactory, fileResolver, execHandleFactory.newExecHandleBuilder());
     }
 
     @Override
@@ -147,7 +147,7 @@ public class DefaultExecActionFactory implements ExecFactory {
     public JavaExecAction newDecoratedJavaExecAction() {
         final JavaForkOptionsInternal forkOptions = newDecoratedJavaForkOptions();
         forkOptions.getExecutable().set(Jvm.current().getJavaExecutable().getAbsolutePath());
-        DefaultJavaExecAction javaExecAction = instantiator.newInstance(DefaultJavaExecAction.class, objectFactory, newJavaExec());
+        DefaultJavaExecAction javaExecAction = instantiator.newInstance(DefaultJavaExecAction.class, newExecAction(), newJavaExec());
         ExecHandleListener listener = getExecHandleListener();
         if (listener != null) {
             javaExecAction.listener(listener);
@@ -183,13 +183,13 @@ public class DefaultExecActionFactory implements ExecFactory {
 
     @Override
     public JavaExecAction newJavaExecAction() {
-        return objectFactory.newInstance(DefaultJavaExecAction.class, objectFactory, newJavaExec());
+        return objectFactory.newInstance(DefaultJavaExecAction.class, newExecAction(), newJavaExec());
     }
 
     @Override
     @SuppressWarnings("deprecation")
     public ExecHandleBuilder newExec() {
-        return new DefaultExecHandleBuilder(objectFactory, execHandleFactory.newExecHandleBuilder());
+        return new DefaultExecHandleBuilder(objectFactory, fileResolver, execHandleFactory.newExecHandleBuilder());
     }
 
     @Override

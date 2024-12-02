@@ -18,10 +18,9 @@ package org.gradle.process.internal;
 
 import org.gradle.api.Action;
 import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.internal.provider.Providers;
 import org.gradle.api.jvm.ModularitySpec;
-import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
@@ -35,7 +34,6 @@ import org.gradle.process.ProcessForkOptions;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
-import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
@@ -49,37 +47,17 @@ import java.util.Map;
 public class DefaultJavaExecAction implements JavaExecAction {
 
     private final JavaExecHandleBuilder javaExecHandleBuilder;
-    private final Property<Boolean> ignoreExitValue;
-    private final Property<InputStream> standardInput;
-    private final Property<OutputStream> standardOutput;
-    private final Property<OutputStream> errorOutput;
-    private final Property<String> executable;
+    private final ExecAction execAction;
 
     @Inject
-    public DefaultJavaExecAction(ObjectFactory objectFactory, JavaExecHandleBuilder javaExecHandleBuilder) {
+    public DefaultJavaExecAction(ExecAction execAction, JavaExecHandleBuilder javaExecHandleBuilder) {
         this.javaExecHandleBuilder = javaExecHandleBuilder;
-        this.ignoreExitValue = objectFactory.property(Boolean.class).convention(false);
-        this.standardInput = objectFactory.property(InputStream.class);
-        this.standardOutput = objectFactory.property(OutputStream.class);
-        this.errorOutput = objectFactory.property(OutputStream.class);
-        this.executable = objectFactory.property(String.class);
+        this.execAction = execAction;
     }
 
     @Override
     public ExecResult execute() {
-        if (getStandardInput().isPresent()) {
-            javaExecHandleBuilder.setStandardInput(getStandardInput().get());
-        }
-        if (getStandardOutput().isPresent()) {
-            javaExecHandleBuilder.setStandardOutput(getStandardOutput().get());
-        }
-        if (getErrorOutput().isPresent()) {
-            javaExecHandleBuilder.setErrorOutput(getErrorOutput().get());
-        }
-        if (getExecutable().isPresent()) {
-            javaExecHandleBuilder.setExecutable(getExecutable().get());
-        }
-
+        execAction.configure(javaExecHandleBuilder);
         ExecHandle execHandle = javaExecHandleBuilder.build();
         ExecResult execResult = execHandle.start().waitForFinish();
         if (!getIgnoreExitValue().get()) {
@@ -162,26 +140,6 @@ public class DefaultJavaExecAction implements JavaExecAction {
     @Override
     public ModularitySpec getModularity() {
         return javaExecHandleBuilder.getModularity();
-    }
-
-    @Override
-    public Property<Boolean> getIgnoreExitValue() {
-        return ignoreExitValue;
-    }
-
-    @Override
-    public Property<InputStream> getStandardInput() {
-        return standardInput;
-    }
-
-    @Override
-    public Property<OutputStream> getStandardOutput() {
-        return standardOutput;
-    }
-
-    @Override
-    public Property<OutputStream> getErrorOutput() {
-        return errorOutput;
     }
 
     @Override
@@ -284,37 +242,43 @@ public class DefaultJavaExecAction implements JavaExecAction {
     }
 
     @Override
+    public Property<Boolean> getIgnoreExitValue() {
+        return execAction.getIgnoreExitValue();
+    }
+
+    @Override
+    public Property<InputStream> getStandardInput() {
+        return execAction.getStandardInput();
+    }
+
+    @Override
+    public Property<OutputStream> getStandardOutput() {
+        return execAction.getStandardOutput();
+    }
+
+    @Override
+    public Property<OutputStream> getErrorOutput() {
+        return execAction.getErrorOutput();
+    }
+
+    @Override
     public Property<String> getExecutable() {
-        return executable;
+        return execAction.getExecutable();
     }
     @Override
     public ProcessForkOptions executable(Object executable) {
-        if (executable instanceof Provider) {
-            getExecutable().set(((Provider<?>) executable).map(Object::toString));
-        } else {
-            getExecutable().set(Providers.changing((Providers.SerializableCallable<String>) executable::toString));
-        }
+        execAction.executable(executable);
         return this;
     }
 
     @Override
-    public File getWorkingDir() {
-        return javaExecHandleBuilder.getWorkingDir();
-    }
-
-    @Override
-    public void setWorkingDir(File dir) {
-        javaExecHandleBuilder.setWorkingDir(dir);
-    }
-
-    @Override
-    public void setWorkingDir(Object dir) {
-        javaExecHandleBuilder.setWorkingDir(dir);
+    public DirectoryProperty getWorkingDir() {
+        return execAction.getWorkingDir();
     }
 
     @Override
     public ProcessForkOptions workingDir(Object dir) {
-        javaExecHandleBuilder.setWorkingDir(dir);
+        execAction.workingDir(dir);
         return this;
     }
 

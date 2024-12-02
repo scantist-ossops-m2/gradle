@@ -16,6 +16,8 @@
 
 package org.gradle.process.internal;
 
+import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.internal.file.FileResolver;
 import org.gradle.api.internal.provider.Providers;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Property;
@@ -25,7 +27,6 @@ import org.gradle.process.ExecResult;
 import org.gradle.process.ProcessForkOptions;
 
 import javax.inject.Inject;
-import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
@@ -44,32 +45,45 @@ public class DefaultExecAction implements ExecAction {
     private final Property<OutputStream> standardOutput;
     private final Property<OutputStream> errorOutput;
     private final Property<String> executable;
+    private final DirectoryProperty workingDir;
+    private final FileResolver fileResolver;
 
     @Inject
-    public DefaultExecAction(ObjectFactory objectFactory, ClientExecHandleBuilder execHandleBuilder) {
+    public DefaultExecAction(ObjectFactory objectFactory, FileResolver fileResolver, ClientExecHandleBuilder execHandleBuilder) {
+        this.fileResolver = fileResolver;
         this.execHandleBuilder = execHandleBuilder;
         this.ignoreExitValue = objectFactory.property(Boolean.class).convention(false);
         this.standardInput = objectFactory.property(InputStream.class);
         this.standardOutput = objectFactory.property(OutputStream.class);
         this.errorOutput = objectFactory.property(OutputStream.class);
         this.executable = objectFactory.property(String.class);
+        this.workingDir = objectFactory.directoryProperty();
+    }
+
+
+    @Override
+    public ExecAction configure(BaseExecHandleBuilder builder) {
+        if (getStandardInput().isPresent()) {
+            builder.setStandardInput(getStandardInput().get());
+        }
+        if (getStandardOutput().isPresent()) {
+            builder.setStandardOutput(getStandardOutput().get());
+        }
+        if (getErrorOutput().isPresent()) {
+            builder.setErrorOutput(getErrorOutput().get());
+        }
+        if (getExecutable().isPresent()) {
+            builder.setExecutable(getExecutable().get());
+        }
+        if (getWorkingDir().isPresent()) {
+            builder.setWorkingDir(getWorkingDir().get().getAsFile());
+        }
+        return this;
     }
 
     @Override
     public ExecResult execute() {
-        if (getStandardInput().isPresent()) {
-            execHandleBuilder.setStandardInput(getStandardInput().get());
-        }
-        if (getStandardOutput().isPresent()) {
-            execHandleBuilder.setStandardOutput(getStandardOutput().get());
-        }
-        if (getErrorOutput().isPresent()) {
-            execHandleBuilder.setErrorOutput(getErrorOutput().get());
-        }
-        if (getExecutable().isPresent()) {
-            execHandleBuilder.setExecutable(getExecutable().get());
-        }
-
+        configure(execHandleBuilder);
         ExecHandle execHandle = execHandleBuilder.build();
         ExecResult execResult = execHandle.start().waitForFinish();
         if (!getIgnoreExitValue().get()) {
@@ -94,18 +108,18 @@ public class DefaultExecAction implements ExecAction {
     }
 
     @Override
-    public File getWorkingDir() {
-        return execHandleBuilder.getWorkingDir();
+    public DirectoryProperty getWorkingDir() {
+        return workingDir;
     }
 
     @Override
-    public void setWorkingDir(File dir) {
-        execHandleBuilder.setWorkingDir(dir);
-    }
-
-    @Override
-    public void setWorkingDir(Object dir) {
-        execHandleBuilder.setWorkingDir(dir);
+    public ExecAction workingDir(Object dir) {
+        if (dir instanceof Provider) {
+            getWorkingDir().fileProvider(((Provider<?>) dir).map(fileResolver::resolve));
+        } else {
+            getWorkingDir().set(fileResolver.resolve(dir));
+        }
+        return this;
     }
 
     @Override
@@ -167,12 +181,6 @@ public class DefaultExecAction implements ExecAction {
     @Override
     public List<CommandLineArgumentProvider> getArgumentProviders() {
         return execHandleBuilder.getArgumentProviders();
-    }
-
-    @Override
-    public ExecAction workingDir(Object dir) {
-        execHandleBuilder.setWorkingDir(dir);
-        return this;
     }
 
     @Override

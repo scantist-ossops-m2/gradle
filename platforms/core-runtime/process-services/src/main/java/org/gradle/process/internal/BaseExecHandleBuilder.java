@@ -19,6 +19,8 @@ package org.gradle.process.internal;
 import org.gradle.api.NonNullApi;
 
 import javax.annotation.Nullable;
+import java.io.File;
+import java.io.InputStream;
 import java.io.OutputStream;
 
 @NonNullApi
@@ -26,7 +28,10 @@ public interface BaseExecHandleBuilder {
 
     BaseExecHandleBuilder setDisplayName(@Nullable String displayName);
     BaseExecHandleBuilder setStandardOutput(OutputStream outputStream);
+    BaseExecHandleBuilder setStandardInput(InputStream inputStream);
     BaseExecHandleBuilder setErrorOutput(OutputStream outputStream);
+    BaseExecHandleBuilder setExecutable(String s);
+    BaseExecHandleBuilder setWorkingDir(File asFile);
 
     /**
      * Adds a listener to the list of ExecHandle listeners..
@@ -34,4 +39,5 @@ public interface BaseExecHandleBuilder {
     BaseExecHandleBuilder listener(ExecHandleListener listener);
 
     ExecHandle build();
+
 }

@@ -15,6 +15,7 @@
  */
 package org.gradle.process.internal;
 
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.internal.provider.Providers;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Property;
@@ -38,6 +39,7 @@ public abstract class AbstractExecHandleBuilder implements BaseExecSpec {
     private final Property<OutputStream> errorOutput;
     private final Property<Boolean> ignoreExitValue;
     private final Property<String> executable;
+    protected final DirectoryProperty workingDir;
 
     AbstractExecHandleBuilder(ObjectFactory objectFactory, ClientExecHandleBuilder delegate) {
         this.delegate = delegate;
@@ -46,6 +48,7 @@ public abstract class AbstractExecHandleBuilder implements BaseExecSpec {
         this.standardOutput = objectFactory.property(OutputStream.class);
         this.errorOutput = objectFactory.property(OutputStream.class);
         this.executable = objectFactory.property(String.class);
+        this.workingDir = objectFactory.directoryProperty();
     }
 
     public abstract List<String> getAllArguments();
@@ -134,6 +137,7 @@ public abstract class AbstractExecHandleBuilder implements BaseExecSpec {
         if (executable.isPresent()) {
             delegate.setExecutable(executable.get());
         }
+        delegate.setWorkingDir(workingDir.getAsFile().getOrNull());
         return delegate.build();
     }
 }

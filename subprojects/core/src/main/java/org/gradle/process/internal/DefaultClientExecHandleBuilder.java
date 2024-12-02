@@ -255,7 +255,7 @@ public class DefaultClientExecHandleBuilder implements ClientExecHandleBuilder, 
     @Override
     public void copyTo(ProcessForkOptions options) {
         options.getExecutable().set(executable);
-        options.setWorkingDir(getWorkingDir());
+        options.getWorkingDir().set(getWorkingDir());
         options.setEnvironment(getEnvironment());
     }
 

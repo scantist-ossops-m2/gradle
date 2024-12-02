@@ -257,28 +257,23 @@ public class JavaExecHandleBuilder implements BaseExecHandleBuilder {
     }
 
     public String getExecutable() {
-        return javaOptions.getExecutable().get();
+        return execHandleBuilder.getExecutable();
     }
 
     public void setExecutable(File executable) {
         setExecutable(executable.getAbsolutePath());
     }
 
-    public void setExecutable(String executable) {
-        javaOptions.getExecutable().set(executable);
+    @Override
+    public JavaExecHandleBuilder setExecutable(String executable) {
+        execHandleBuilder.setExecutable(executable);
+        return this;
     }
 
-    @Nullable
-    public File getWorkingDir() {
-        return javaOptions.getWorkingDir();
-    }
-
-    public void setWorkingDir(@Nullable Object dir) {
-        javaOptions.setWorkingDir(dir);
-    }
-
-    public void setWorkingDir(@Nullable File dir) {
-        javaOptions.setWorkingDir(dir);
+    @Override
+    public JavaExecHandleBuilder setWorkingDir(@Nullable File dir) {
+        execHandleBuilder.setWorkingDir(dir);
+        return this;
     }
 
     public Map<String, Object> getEnvironment() {
@@ -372,8 +367,10 @@ public class JavaExecHandleBuilder implements BaseExecHandleBuilder {
         return javaOptions.getJvmArgumentProviders();
     }
 
-    public void setStandardInput(InputStream inputStream) {
+    @Override
+    public JavaExecHandleBuilder setStandardInput(InputStream inputStream) {
         execHandleBuilder.setStandardInput(inputStream);
+        return this;
     }
 
     public InputStream getStandardInput() {
@@ -479,10 +476,8 @@ public class JavaExecHandleBuilder implements BaseExecHandleBuilder {
 
     @Override
     public ExecHandle build() {
-        // We delegate properties that are also on ProcessForkOptions interface to JavaForkOptions
-        // to support copy from JavaOptions, and thus we have to copy them to execHandleBuilder here
-        execHandleBuilder.setExecutable(getExecutable());
-        execHandleBuilder.setWorkingDir(getWorkingDir());
+        // We delegate environment to JavaForkOptions, so we filter out environment variables in the same way as DefaultJavaForkOptions.
+        // Thus we have to copy them to execHandleBuilder here.
         execHandleBuilder.setEnvironment(getEnvironment());
         return execHandleBuilder.buildWithEffectiveArguments(getEffectiveArguments());
     }

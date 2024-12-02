@@ -25,6 +25,7 @@ import org.gradle.api.JavaVersion;
 import org.gradle.api.NonNullApi;
 import org.gradle.api.Transformer;
 import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.file.FileTreeElement;
@@ -230,25 +231,8 @@ public abstract class Test extends AbstractTestTask implements JavaForkOptions, 
      */
     @Override
     @Internal
-    @ToBeReplacedByLazyProperty
-    public File getWorkingDir() {
+    public DirectoryProperty getWorkingDir() {
         return forkOptions.getWorkingDir();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setWorkingDir(File dir) {
-        forkOptions.setWorkingDir(dir);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setWorkingDir(Object dir) {
-        forkOptions.setWorkingDir(dir);
     }
 
     /**
@@ -277,7 +261,6 @@ public abstract class Test extends AbstractTestTask implements JavaForkOptions, 
      */
     @Override
     @Internal
-    @ToBeReplacedByLazyProperty
     public Property<String> getExecutable() {
         return forkOptions.getExecutable();
     }

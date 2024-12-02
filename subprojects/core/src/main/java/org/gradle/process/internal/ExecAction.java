@@ -23,4 +23,5 @@ import org.gradle.process.ExecSpec;
 public interface ExecAction extends ExecSpec {
     ExecResult execute() throws ExecException;
     ExecAction listener(ExecHandleListener listener);
+    ExecAction configure(BaseExecHandleBuilder builder);
 }
