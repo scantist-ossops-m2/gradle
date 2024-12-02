@@ -39,14 +39,10 @@ class ShortCircuitingResolutionExecutorSpec extends Specification {
 
     DependencyLockingState lockingState = Mock()
     DependencyLockingProvider lockingProvider = Mock()
-    ResolveContext resolveContext = Mock(ResolveContext) {
-        getResolutionStrategy() >> Mock(ResolutionStrategyInternal) {
-            getDependencyLockingProvider() >> lockingProvider
-        }
-    }
+    ResolveContext resolveContext = Mock(ResolveContext)
 
     def delegate = Mock(ResolutionExecutor)
-    def dependencyResolver = new ShortCircuitingResolutionExecutor(delegate, new AttributeDesugaring(AttributeTestUtil.attributesFactory()))
+    def dependencyResolver = new ShortCircuitingResolutionExecutor(delegate, new AttributeDesugaring(AttributeTestUtil.attributesFactory()), lockingProvider)
 
     def "returns empty build dependencies when no dependencies"() {
         def depVisitor = Mock(TaskDependencyResolveContext)
@@ -116,17 +112,14 @@ class ShortCircuitingResolutionExecutorSpec extends Specification {
 
     def 'empty graph result for build dependencies does not interact with dependency locking'() {
         given:
-        ResolutionStrategyInternal resolutionStrategy = Mock()
-
         ResolutionParameters params = paramsWithoutDependencies()
-        resolveContext.resolutionStrategy >> resolutionStrategy
 
         when:
         dependencyResolver.resolveBuildDependencies(resolveContext, params, Stub(CalculatedValue))
 
         then:
 
-        0 * resolutionStrategy._
+        0 * lockingProvider._
     }
 
     def 'empty graph result still interacts with dependency locking'() {

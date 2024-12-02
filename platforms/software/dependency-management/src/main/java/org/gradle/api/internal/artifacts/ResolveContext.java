@@ -15,7 +15,7 @@
  */
 package org.gradle.api.internal.artifacts;
 
-import org.gradle.api.internal.artifacts.configurations.ResolutionStrategyInternal;
+import org.gradle.api.internal.artifacts.configurations.dynamicversion.CachePolicy;
 import org.gradle.api.internal.artifacts.ivyservice.resolutionstrategy.CapabilitiesResolutionInternal;
 import org.gradle.internal.ImmutableActionSet;
 
@@ -35,7 +35,10 @@ import org.gradle.internal.ImmutableActionSet;
  */
 public interface ResolveContext {
 
-    ResolutionStrategyInternal getResolutionStrategy();
+    /**
+     * The cache policy to use when resolving external resources.
+     */
+    CachePolicy getCachePolicy();
 
     /**
      * Rules that may substitute user declared dependencies for other dependencies.

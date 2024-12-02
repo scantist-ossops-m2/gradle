@@ -601,11 +601,13 @@ public class DefaultDependencyManagementServices implements DependencyManagement
             AttributeDesugaring attributeDesugaring,
             ArtifactTypeRegistry artifactTypeRegistry,
             ComponentModuleMetadataHandlerInternal componentModuleMetadataHandler,
-            AttributeSchemaServices attributeSchemaServices
+            AttributeSchemaServices attributeSchemaServices,
+            DependencyLockingProvider dependencyLockingProvider
         ) {
             ShortCircuitingResolutionExecutor shortCircuitingResolutionExecutor = new ShortCircuitingResolutionExecutor(
                 resolutionExecutor,
-                attributeDesugaring
+                attributeDesugaring,
+                dependencyLockingProvider
             );
 
             return new DefaultConfigurationResolver(

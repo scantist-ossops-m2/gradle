@@ -53,6 +53,9 @@ public interface ConfigurationInternal extends ResolveContext, DeprecatableConfi
     @Override
     AttributeContainerInternal getAttributes();
 
+    @Override
+    ResolutionStrategyInternal getResolutionStrategy();
+
     /**
      * Runs any registered dependency actions for this Configuration, and any parent Configuration.
      * Actions may mutate the dependency set for this configuration.

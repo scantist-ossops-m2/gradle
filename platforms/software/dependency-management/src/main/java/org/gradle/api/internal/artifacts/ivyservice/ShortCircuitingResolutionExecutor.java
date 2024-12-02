@@ -64,13 +64,16 @@ import java.util.Set;
 public class ShortCircuitingResolutionExecutor {
     private final ResolutionExecutor delegate;
     private final AttributeDesugaring attributeDesugaring;
+    private final DependencyLockingProvider dependencyLockingProvider;
 
     public ShortCircuitingResolutionExecutor(
         ResolutionExecutor delegate,
-        AttributeDesugaring attributeDesugaring
+        AttributeDesugaring attributeDesugaring,
+        DependencyLockingProvider dependencyLockingProvider
     ) {
         this.delegate = delegate;
         this.attributeDesugaring = attributeDesugaring;
+        this.dependencyLockingProvider = dependencyLockingProvider;
     }
 
     public ResolverResults resolveBuildDependencies(ResolveContext resolveContext, ResolutionParameters params, CalculatedValue<ResolverResults> futureCompleteResults) {
@@ -90,7 +93,6 @@ public class ShortCircuitingResolutionExecutor {
         }
 
         if (params.isDependencyLockingEnabled()) {
-            DependencyLockingProvider dependencyLockingProvider = resolveContext.getResolutionStrategy().getDependencyLockingProvider();
             DependencyLockingState lockingState = dependencyLockingProvider.loadLockState(params.getDependencyLockingId(), params.getResolutionHost().displayName());
             if (lockingState.mustValidateLockState() && !lockingState.getLockedDependencies().isEmpty()) {
                 // Invalid lock state, need to do a real resolution to gather locking failures

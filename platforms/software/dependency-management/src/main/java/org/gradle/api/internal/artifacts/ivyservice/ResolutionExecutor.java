@@ -260,7 +260,7 @@ public class ResolutionExecutor {
         ImmutableActionSet<DependencySubstitutionInternal> dependencySubstitutionRule = resolveContext.getDependencySubstitutionRules();
         CapabilitiesResolutionInternal capabilitiesResolutionRules = resolveContext.getCapabilityConflictResolutionRules();
         ComponentSelectionRulesInternal componentSelection = resolveContext.getComponentSelectionRules();
-        CachePolicy cachePolicy = resolveContext.getResolutionStrategy().getCachePolicy();
+        CachePolicy cachePolicy = resolveContext.getCachePolicy();
 
         ResolutionFailureCollector failureCollector = new ResolutionFailureCollector(componentSelectorConverter);
         InMemoryResolutionResultBuilder resolutionResultBuilder = new InMemoryResolutionResultBuilder(params.getIncludeAllSelectableVariantResults());
@@ -322,7 +322,7 @@ public class ResolutionExecutor {
         ImmutableActionSet<DependencySubstitutionInternal> dependencySubstitutionRule = resolveContext.getDependencySubstitutionRules();
         CapabilitiesResolutionInternal capabilitiesResolutionRules = resolveContext.getCapabilityConflictResolutionRules();
         ComponentSelectionRulesInternal componentSelection = resolveContext.getComponentSelectionRules();
-        CachePolicy cachePolicy = resolveContext.getResolutionStrategy().getCachePolicy();
+        CachePolicy cachePolicy = resolveContext.getCachePolicy();
 
         StoreSet stores = storeFactory.createStoreSet();
 

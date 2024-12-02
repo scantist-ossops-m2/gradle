@@ -64,6 +64,7 @@ import org.gradle.api.internal.artifacts.DependencySubstitutionInternal;
 import org.gradle.api.internal.artifacts.ExcludeRuleNotationConverter;
 import org.gradle.api.internal.artifacts.ResolveExceptionMapper;
 import org.gradle.api.internal.artifacts.ResolverResults;
+import org.gradle.api.internal.artifacts.configurations.dynamicversion.CachePolicy;
 import org.gradle.api.internal.artifacts.dependencies.DependencyConstraintInternal;
 import org.gradle.api.internal.artifacts.ivyservice.ResolutionParameters;
 import org.gradle.api.internal.artifacts.ivyservice.TypedResolveException;
@@ -1288,6 +1289,11 @@ public abstract class DefaultConfiguration extends AbstractFileCollection implem
             resolutionStrategyFactory = null;
         }
         return resolutionStrategy;
+    }
+
+    @Override
+    public CachePolicy getCachePolicy() {
+        return getResolutionStrategy().getCachePolicy();
     }
 
     @Override
