@@ -103,8 +103,8 @@ public abstract class CodeNarc extends AbstractCodeQualityTask implements Report
         parameters.getMaxPriority3Violations().set(getMaxPriority3Violations());
         parameters.getEnabledReports().set(getReports().getEnabled().stream().map(report -> {
             CodeNarcActionParameters.EnabledReport newReport = getObjectFactory().newInstance(CodeNarcActionParameters.EnabledReport.class);
-            newReport.getName().set(report.getName());
-            newReport.getOutputLocation().set(report.getOutputLocation());
+            newReport.getName().set(report.getName().get());
+            newReport.getOutputLocation().set(report.getOutputLocation().get());
             return newReport;
         }).collect(Collectors.toList()));
         parameters.getIgnoreFailures().set(getIgnoreFailures());

@@ -172,7 +172,7 @@ public abstract class PmdPlugin extends AbstractCodeQualityPlugin<Pmd> {
             report.getRequired().convention(true);
             report.getOutputLocation().convention(
                 layout.getProjectDirectory().file(providers.provider(() -> {
-                    String reportFileName = baseName + "." + report.getName();
+                    String reportFileName = baseName + "." + report.getName().get();
                     return new File(reportsDir.get().getAsFile(), reportFileName).getAbsolutePath();
                 }))
             );

@@ -117,8 +117,8 @@ public abstract class Pmd extends AbstractCodeQualityTask implements Reporting<P
         parameters.getSource().setFrom(getSource());
         parameters.getEnabledReports().set(getReports().getEnabled().stream().map(report -> {
             PmdActionParameters.EnabledReport newReport = getObjectFactory().newInstance(PmdActionParameters.EnabledReport.class);
-            newReport.getName().set(report.getName());
-            newReport.getOutputLocation().set(report.getOutputLocation());
+            newReport.getName().set(report.getName().get());
+            newReport.getOutputLocation().set(report.getOutputLocation().get());
             return newReport;
         }).collect(Collectors.toList()));
     }

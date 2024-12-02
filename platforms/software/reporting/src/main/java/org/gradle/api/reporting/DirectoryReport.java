@@ -17,8 +17,11 @@
 package org.gradle.api.reporting;
 
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.OutputDirectory;
+import org.gradle.internal.instrumentation.api.annotations.ReplacesEagerProperty;
 
 import java.io.File;
 
@@ -38,7 +41,8 @@ public interface DirectoryReport extends ConfigurableReport {
      *
      */
     @Internal
-    File getEntryPoint();
+    @ReplacesEagerProperty
+    Provider<File> getEntryPoint();
 
     @OutputDirectory
     @Override
@@ -50,5 +54,5 @@ public interface DirectoryReport extends ConfigurableReport {
      * @return {@link Report.OutputType#DIRECTORY}
      */
     @Override
-    OutputType getOutputType();
+    Property<OutputType> getOutputType();
 }

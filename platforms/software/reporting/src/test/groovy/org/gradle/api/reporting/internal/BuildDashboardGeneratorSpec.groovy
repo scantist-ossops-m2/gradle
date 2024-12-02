@@ -21,6 +21,7 @@ import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.reporting.DirectoryReport
 import org.gradle.api.reporting.Report
 import org.gradle.test.fixtures.file.TestNameTestDirectoryProvider
+import org.gradle.util.TestUtil
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.junit.Rule
@@ -50,7 +51,7 @@ class BuildDashboardGeneratorSpec extends Specification {
             get() >> directory
         }
         Stub(Report) {
-            getDisplayName() >> name
+            getDisplayName() >> TestUtil.propertyFactory().property(String).value(name)
             getOutputLocation() >> destinationProperty
         }
     }
@@ -63,9 +64,11 @@ class BuildDashboardGeneratorSpec extends Specification {
             get() >> directory
         }
         Stub(DirectoryReport) {
-            getDisplayName() >> name
+            getDisplayName() >> TestUtil.propertyFactory().property(String).value(name)
             getOutputLocation() >> destinationProperty
-            getEntryPoint() >> new File(destinationDirectory, "index.html")
+            getEntryPoint() >> TestUtil.providerFactory().provider {
+                new File(destinationDirectory, "index.html")
+            }
         }
     }
 

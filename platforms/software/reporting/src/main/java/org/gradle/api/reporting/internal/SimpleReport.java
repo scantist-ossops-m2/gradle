@@ -20,6 +20,7 @@ import groovy.lang.Closure;
 import org.gradle.api.Describable;
 import org.gradle.api.file.FileSystemLocation;
 import org.gradle.api.file.FileSystemLocationProperty;
+import org.gradle.api.provider.Property;
 import org.gradle.api.reporting.ConfigurableReport;
 import org.gradle.api.reporting.Report;
 import org.gradle.internal.deprecation.DeprecationLogger;
@@ -28,29 +29,22 @@ import org.gradle.util.internal.ConfigureUtil;
 import java.io.File;
 
 public abstract class SimpleReport implements ConfigurableReport {
-    private final String name;
-    private final Describable displayName;
-    private final OutputType outputType;
 
     public SimpleReport(String name, Describable displayName, OutputType outputType) {
-        this.name = name;
-        this.displayName = displayName;
-        this.outputType = outputType;
+        this.getName().set(name);
+        this.getDisplayName().set(displayName.getDisplayName());
+        this.getOutputType().set(outputType);
     }
 
     @Override
-    public String getName() {
-        return name;
-    }
+    public abstract Property<String> getName();
 
     @Override
-    public String getDisplayName() {
-        return displayName.getDisplayName();
-    }
+    public abstract Property<String> getDisplayName();
 
     @Override
     public String toString() {
-        return "Report " + getName();
+        return "Report " + getName().get();
     }
 
     @Override
@@ -68,9 +62,7 @@ public abstract class SimpleReport implements ConfigurableReport {
         getOutputLocation().fileValue(file);
     }
     @Override
-    public OutputType getOutputType() {
-        return outputType;
-    }
+    public abstract Property<OutputType> getOutputType();
 
     @Override
     public Report configure(Closure configure) {
