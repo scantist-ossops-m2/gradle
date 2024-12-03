@@ -1603,10 +1603,11 @@ The value of this property is derived from: <source>""")
     def "can add a lot of providers"() {
         given:
         (0..<100000).each {
-            property.add(Providers.of("$it"))
+            property.add(supplierWithProducer(Mock(Task), ""))
         }
 
         expect:
         property.get().size() == 100000
+        property.getProducer().visitProducerTasks {}
     }
 }
