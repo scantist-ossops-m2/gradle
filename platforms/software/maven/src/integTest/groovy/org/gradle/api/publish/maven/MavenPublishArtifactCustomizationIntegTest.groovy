@@ -308,13 +308,13 @@ Cannot publish module metadata because an artifact from the 'java' component has
                         classifier = "output"
                     }
                     artifact(customFileTask.outputFile) {
-                         extension = "htm"
+                        extension = "htm"
                         classifier = "documentation"
                         builtBy customFileTask
                     }
                     artifact(regularFileTask.outputFile) {
                         classifier = "regular"
-                         extension = "txt"
+                        extension = "txt"
                     }
                     artifact customJar {
                         archiveClassifier = null

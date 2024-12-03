@@ -44,7 +44,7 @@ class MavenPublishPomPackagingIntegTest extends AbstractMavenPublishIntegTest {
         createBuildScripts """
             artifact("content.txt")
             artifact("content.txt") {
-                 extension = "rtf"
+                extension = "rtf"
             }
 """
 
@@ -119,7 +119,7 @@ class MavenPublishPomPackagingIntegTest extends AbstractMavenPublishIntegTest {
             pom.packaging = "foo"
 
             artifact("content.txt") {
-                 extension = "txt"
+                extension = "txt"
             }
 """
 
@@ -138,7 +138,7 @@ class MavenPublishPomPackagingIntegTest extends AbstractMavenPublishIntegTest {
             pom.packaging = "ejb"
 
             artifact("content.txt") {
-                 extension = "jar"
+                extension = "jar"
             }
 """
 
@@ -158,7 +158,7 @@ class MavenPublishPomPackagingIntegTest extends AbstractMavenPublishIntegTest {
 
             artifact("content.txt")
             artifact("content.txt") {
-                 extension = "other"
+                extension = "other"
             }
 """
 
