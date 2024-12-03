@@ -905,13 +905,13 @@ abstract class AbstractClassGenerator implements ClassGenerator {
             }
             visitor.addDynamicMethods();
             addMissingClosureOverloads(visitor);
-            // TODO: remove in Gradle 10.0
             addSetMethods(visitor);
         }
 
         private void addSetMethods(AbstractClassGenerator.ClassGenerationVisitor visitor) {
             for (PropertyMetadata property : mutableProperties) {
                 if (property.setMethods.isEmpty()) {
+                    // TODO: remove in Gradle 10.0
                     Set<Class<?>> appliedTo = new HashSet<>();
                     for (Method setter : property.setters) {
                         if (appliedTo.add(setter.getParameterTypes()[0])) {

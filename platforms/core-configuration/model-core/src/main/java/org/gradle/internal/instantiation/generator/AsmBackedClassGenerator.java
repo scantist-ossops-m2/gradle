@@ -1634,7 +1634,6 @@ public class AsmBackedClassGenerator extends AbstractClassGenerator {
                 visitAnnotation(DEPRECATED_ANNOTATION_TYPE.getDescriptor(), true).visitEnd();
 
                 // PRINT DEPRECATION WARNING
-                _ALOAD(0);
                 _LDC(property.getName());
                 _INVOKESTATIC(DEPRECATION_HOLDER_TYPE, "logGroovySpaceAssignmentDeprecation", RETURN_VOID_FROM_STRING);
 
