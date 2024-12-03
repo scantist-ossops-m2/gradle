@@ -134,7 +134,7 @@ class RepositoriesDeclaredInSettingsIntegrationTest extends AbstractModuleDepend
             }
 
             repositories {
-                maven { url = 'file:/dummy' }
+                maven { url = 'dummy' }
             }
         """
 
@@ -206,7 +206,7 @@ class RepositoriesDeclaredInSettingsIntegrationTest extends AbstractModuleDepend
             }
 
             repositories {
-                maven { url = 'file:/dummy' }
+                maven { url = 'dummy' }
             }
         """
 
@@ -451,7 +451,7 @@ class RepositoriesDeclaredInSettingsIntegrationTest extends AbstractModuleDepend
             dependencyResolutionManagement {
                 repositories {
                     maven {
-                        url = "file:/this-should-be-ignored"
+                        url = "this-should-be-ignored"
                     }
                 }
             }
@@ -517,7 +517,7 @@ class RepositoriesDeclaredInSettingsIntegrationTest extends AbstractModuleDepend
             }
 
             repositories {
-                maven { url = 'file:/dummy' }
+                maven { url = 'dummy' }
             }
         """
         settingsFile << """
@@ -790,7 +790,7 @@ class RepositoriesDeclaredInSettingsIntegrationTest extends AbstractModuleDepend
         buildFile << """
             repositories {
                 maven {
-                    url = "file:/dummy"
+                    url = "dummy"
                 }
             }
 
@@ -832,7 +832,7 @@ class RepositoriesDeclaredInSettingsIntegrationTest extends AbstractModuleDepend
 settingsEvaluated {
   it.dependencyResolutionManagement {
     repositories {
-      maven { url = 'file:/doesnt/matter' }
+      maven { url = 'doesnt matter' }
     }
   }
 }
