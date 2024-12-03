@@ -17,7 +17,6 @@
 package org.gradle.api.internal.provider;
 
 import com.google.common.collect.ImmutableCollection;
-import org.gradle.api.Action;
 
 
 /**
@@ -31,7 +30,7 @@ public interface Collector<T> extends ValueSupplier {
 
     int size();
 
-    void calculateExecutionTimeValue(Action<? super ExecutionTimeValue<? extends Iterable<? extends T>>> visitor);
+    ExecutionTimeValue<? extends Iterable<? extends T>> calculateExecutionTimeValue();
 
     /**
      * Returns a view of this collector that never returns a missing value.

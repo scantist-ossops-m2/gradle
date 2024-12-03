@@ -20,7 +20,6 @@ import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import org.gradle.api.Action;
 import org.gradle.api.provider.Provider;
 import org.gradle.internal.Cast;
 
@@ -61,8 +60,8 @@ public class Collectors {
         }
 
         @Override
-        public void calculateExecutionTimeValue(Action<? super ExecutionTimeValue<? extends Iterable<? extends T>>> visitor) {
-            visitor.execute(ExecutionTimeValue.fixedValue(ImmutableList.of(element)));
+        public ExecutionTimeValue<? extends Iterable<? extends T>> calculateExecutionTimeValue() {
+            return ExecutionTimeValue.fixedValue(ImmutableList.of(element));
         }
 
         @Override
@@ -132,9 +131,9 @@ public class Collectors {
         }
 
         @Override
-        public void calculateExecutionTimeValue(Action<? super ExecutionTimeValue<? extends Iterable<? extends T>>> visitor) {
+        public ExecutionTimeValue<? extends Iterable<? extends T>> calculateExecutionTimeValue() {
             ExecutionTimeValue<? extends T> value = provider.calculateExecutionTimeValue();
-            visitValue(visitor, value);
+            return visitValue(value);
         }
 
         @Override
@@ -170,14 +169,14 @@ public class Collectors {
         }
     }
 
-    private static <T> void visitValue(Action<? super ValueSupplier.ExecutionTimeValue<? extends Iterable<? extends T>>> visitor, ValueSupplier.ExecutionTimeValue<? extends T> value) {
+    private static <T> ValueSupplier.ExecutionTimeValue<? extends Iterable<? extends T>> visitValue(ValueSupplier.ExecutionTimeValue<? extends T> value) {
         if (value.isMissing()) {
-            visitor.execute(ValueSupplier.ExecutionTimeValue.missing());
+            return ValueSupplier.ExecutionTimeValue.missing();
         } else if (value.hasFixedValue()) {
             // transform preserving side effects
-            visitor.execute(ValueSupplier.ExecutionTimeValue.value(value.toValue().transform(ImmutableList::of)));
+            return ValueSupplier.ExecutionTimeValue.value(value.toValue().transform(ImmutableList::of));
         } else {
-            visitor.execute(ValueSupplier.ExecutionTimeValue.changingValue(value.getChangingValue().map(transformer(ImmutableList::of))));
+            return ValueSupplier.ExecutionTimeValue.changingValue(value.getChangingValue().map(transformer(ImmutableList::of)));
         }
     }
 
@@ -206,8 +205,8 @@ public class Collectors {
         }
 
         @Override
-        public void calculateExecutionTimeValue(Action<? super ExecutionTimeValue<? extends Iterable<? extends T>>> visitor) {
-            visitor.execute(ExecutionTimeValue.fixedValue(value));
+        public ExecutionTimeValue<? extends Iterable<? extends T>> calculateExecutionTimeValue() {
+            return ExecutionTimeValue.fixedValue(value);
         }
 
         @Override
@@ -291,8 +290,8 @@ public class Collectors {
         }
 
         @Override
-        public void calculateExecutionTimeValue(Action<? super ExecutionTimeValue<? extends Iterable<? extends T>>> visitor) {
-            visitor.execute(provider.calculateExecutionTimeValue());
+        public ExecutionTimeValue<? extends Iterable<? extends T>> calculateExecutionTimeValue() {
+            return provider.calculateExecutionTimeValue();
         }
 
         @Override
@@ -364,8 +363,8 @@ public class Collectors {
         }
 
         @Override
-        public void calculateExecutionTimeValue(Action<? super ExecutionTimeValue<? extends Iterable<? extends T>>> visitor) {
-            visitor.execute(ExecutionTimeValue.fixedValue(ImmutableList.copyOf(value)));
+        public ExecutionTimeValue<? extends Iterable<? extends T>> calculateExecutionTimeValue() {
+            return ExecutionTimeValue.fixedValue(ImmutableList.copyOf(value));
         }
 
         @Override
@@ -425,8 +424,8 @@ public class Collectors {
         }
 
         @Override
-        public void calculateExecutionTimeValue(Action<? super ExecutionTimeValue<? extends Iterable<? extends T>>> visitor) {
-            delegate.calculateExecutionTimeValue(visitor);
+        public ExecutionTimeValue<? extends Iterable<? extends T>> calculateExecutionTimeValue() {
+            return delegate.calculateExecutionTimeValue();
         }
 
         @Override

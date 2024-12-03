@@ -19,6 +19,7 @@ package org.gradle.api.internal.provider;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import org.gradle.api.Action;
 import org.gradle.api.Transformer;
 import org.gradle.api.internal.provider.Collectors.ElementFromProvider;
@@ -502,7 +503,16 @@ public abstract class AbstractCollectionProperty<T, C extends Collection<T>> ext
 
         @Override
         public boolean calculatePresence(ValueConsumer consumer) {
-            return !calculateValue(consumer).isMissing();
+            for (Collector<T> collector : Lists.reverse(getCollectors())) {
+                if (collector.calculatePresence(consumer)) {
+                    if (collector instanceof AbsentIgnoringCollector<?>) {
+                        return true;
+                    }
+                } else {
+                    return false;
+                }
+            }
+            return true;
         }
 
         @Override
@@ -533,15 +543,8 @@ public abstract class AbstractCollectionProperty<T, C extends Collection<T>> ext
 
         @Override
         public CollectionSupplier<T, C> plus(Collector<T> addedCollector) {
-//            Collector<T> left = value.absentIgnoringIfNeeded(ignoreAbsent);
-//            Collector<T> right = addedCollector;
-
-//            PlusCollector<T> newCollector = new PlusCollector<>(left, right);
             Preconditions.checkState(collectors.size() == size);
-//            new AbsentIgnoringCollector<>(addedCollector);
-//            collectors.set(size - 1, collectors.get(size - 1).absentIgnoringIfNeeded(ignoreAbsent));
             collectors.add(addedCollector);
-
             return new CollectingSupplier(collectors, size + 1, false);
         }
 
@@ -586,14 +589,24 @@ public abstract class AbstractCollectionProperty<T, C extends Collection<T>> ext
 
         @Nonnull
         private List<ExecutionTimeValue<? extends Iterable<? extends T>>> collectExecutionTimeValues() {
-            List<ExecutionTimeValue<? extends Iterable<? extends T>>> values = new ArrayList<>();
+            List<ExecutionTimeValue<? extends Iterable<? extends T>>> executionTimeValues = new ArrayList<>();
             for (Collector<T> collector : getCollectors()) {
-                collector.calculateExecutionTimeValue(values::add);
-                if (values.stream().anyMatch(ExecutionTimeValue::isMissing) && collector instanceof AbsentIgnoringCollector<?>) {
-                    values.clear();
+                ExecutionTimeValue<? extends Iterable<? extends T>> result = collector.calculateExecutionTimeValue();
+                if (result.isMissing()) {
+                    executionTimeValues.clear();
+                    executionTimeValues.add(result);
+                } else {
+                    if (!executionTimeValues.isEmpty() && executionTimeValues.get(executionTimeValues.size() - 1).isMissing()) {
+                        if (collector instanceof AbsentIgnoringCollector<?>) {
+                            executionTimeValues.set(executionTimeValues.size() - 1, result);
+                        }
+                    } else {
+                        executionTimeValues.add(result);
+                    }
                 }
             }
-            return values;
+
+            return executionTimeValues;
         }
 
         private ExecutionTimeValue<C> getFixedExecutionTimeValue(List<ExecutionTimeValue<? extends Iterable<? extends T>>> values, boolean changingContent) {
@@ -703,8 +716,8 @@ public abstract class AbstractCollectionProperty<T, C extends Collection<T>> ext
         }
 
         @Override
-        public void calculateExecutionTimeValue(Action<? super ExecutionTimeValue<? extends Iterable<? extends T>>> visitor) {
-            visitor.execute(ExecutionTimeValue.fixedValue(collection).withSideEffect(sideEffect));
+        public ExecutionTimeValue<? extends Iterable<? extends T>> calculateExecutionTimeValue() {
+            return ExecutionTimeValue.fixedValue(collection).withSideEffect(sideEffect);
         }
 
         @Override
@@ -751,20 +764,9 @@ public abstract class AbstractCollectionProperty<T, C extends Collection<T>> ext
         }
 
         @Override
-        public void calculateExecutionTimeValue(Action<? super ExecutionTimeValue<? extends Iterable<? extends T>>> visitor) {
-            boolean[] anyMissing = {false};
-            ImmutableList.Builder<ExecutionTimeValue<? extends Iterable<? extends T>>> toVisit = ImmutableList.builder();
-            Action<? super ExecutionTimeValue<? extends Iterable<? extends T>>> safeVisitor = value -> {
-                if (value.isMissing()) {
-                    anyMissing[0] = true;
-                } else {
-                    toVisit.add(value);
-                }
-            };
-            delegate.calculateExecutionTimeValue(safeVisitor);
-            if (!anyMissing[0]) {
-                toVisit.build().forEach(visitor::execute);
-            }
+        public ExecutionTimeValue<? extends Iterable<? extends T>> calculateExecutionTimeValue() {
+            ExecutionTimeValue<? extends Iterable<? extends T>> executionTimeValue = delegate.calculateExecutionTimeValue();
+            return executionTimeValue.isMissing() ? ExecutionTimeValue.fixedValue(ImmutableList.of()) : executionTimeValue;
         }
 
         @Override
