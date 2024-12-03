@@ -42,10 +42,10 @@ import java.util.function.Supplier;
 /**
  * The base class for collection properties.
  * <p>
- *     Value suppliers for collection properties are implementations of {@link CollectionSupplier}.
+ * Value suppliers for collection properties are implementations of {@link CollectionSupplier}.
  * </p>
  * <p>
- *     Elements stored in collection property values are implemented via various implementations of {@link Collector}.
+ * Elements stored in collection property values are implemented via various implementations of {@link Collector}.
  * </p>
  * <h2>Collection suppliers</h2>
  * The value of a collection property is represented at any time as an instance of an implementation of {@link CollectionSupplier}, namely:
@@ -210,8 +210,9 @@ public abstract class AbstractCollectionProperty<T, C extends Collection<T>> ext
      */
     private void addExplicitCollector(Collector<T> collector, boolean ignoreAbsent) {
         assertCanMutate();
-        CollectionSupplier<T, C> explicitValue = getExplicitValue(defaultValue).absentIgnoringIfNeeded(ignoreAbsent);
-        setSupplier(explicitValue.plus(collector.absentIgnoringIfNeeded(ignoreAbsent)));
+        CollectionSupplier<T, C> explicitValue = getExplicitValue(defaultValue);
+        Collector<T> added = collector.absentIgnoringIfNeeded(ignoreAbsent);
+        setSupplier(explicitValue.plus(ignoreAbsent ? new AbsentIgnoringCollector<>(added) : added));
     }
 
     @Nullable
@@ -456,9 +457,7 @@ public abstract class AbstractCollectionProperty<T, C extends Collection<T>> ext
 
         @Override
         public CollectionSupplier<T, C> plus(Collector<T> collector) {
-            Collector<T> left = new FixedValueCollector<>(value, sideEffect);
-            PlusCollector<T> newCollector = new PlusCollector<>(left, collector);
-            return new CollectingSupplier(newCollector);
+            return new CollectingSupplier(new FixedValueCollector<T, C>(value, sideEffect)).plus(collector);
         }
 
         @Override
@@ -478,12 +477,16 @@ public abstract class AbstractCollectionProperty<T, C extends Collection<T>> ext
     }
 
     private class CollectingSupplier implements CollectionSupplier<T, C> {
-        private final Collector<T> value;
+        private final List<Collector<T>> collectors;
+        private final int size;
+        //        private final Collector<T> value;
         // TODO-RC: can we get rid of this? Can we only keep this in Collectors? Changing execution time value is the only case that needs this.
         private final boolean ignoreAbsent;
 
         public CollectingSupplier(Collector<T> value, boolean ignoreAbsent) {
-            this.value = value;
+            this.size = 1;
+            collectors = new ArrayList<>();
+            collectors.add(value);
             this.ignoreAbsent = ignoreAbsent;
         }
 
@@ -491,33 +494,60 @@ public abstract class AbstractCollectionProperty<T, C extends Collection<T>> ext
             this(value, false);
         }
 
+        public CollectingSupplier(List<Collector<T>> collectors, int size, boolean ignoreAbsent) {
+            this.collectors = collectors;
+            this.size = size;
+            this.ignoreAbsent = ignoreAbsent;
+        }
+
         @Override
         public boolean calculatePresence(ValueConsumer consumer) {
-            return value.calculatePresence(consumer);
+            return !calculateValue(consumer).isMissing();
         }
 
         @Override
         public Value<C> calculateValue(ValueConsumer consumer) {
             // TODO - don't make a copy when the collector already produces an immutable collection
             ImmutableCollection.Builder<T> builder = collectionFactory.get();
-            Value<Void> result = value.collectEntries(consumer, valueCollector, builder);
-            if (result.isMissing()) {
-                return result.asType();
+            Value<Void> compositeResult = Value.present();
+            for (Collector<T> collector : getCollectors()) {
+                Value<Void> result = collector.collectEntries(consumer, valueCollector, builder);
+                if (result.isMissing()) {
+                    builder = collectionFactory.get();
+                    compositeResult = result;
+                } else {
+                    if (compositeResult.isMissing() && collector instanceof AbsentIgnoringCollector<?>) {
+                        compositeResult = result;
+                    } else if (compositeResult.isMissing()) {
+                        builder = collectionFactory.get();
+                    } else {
+                        compositeResult = compositeResult.withSideEffect(SideEffect.fixedFrom(result));
+                    }
+                }
             }
-            return Value.of(Cast.<C>uncheckedNonnullCast(builder.build())).withSideEffect(SideEffect.fixedFrom(result));
+            if (compositeResult.isMissing()) {
+                return compositeResult.asType();
+            }
+            return Value.of(Cast.<C>uncheckedNonnullCast(builder.build())).withSideEffect(SideEffect.fixedFrom(compositeResult));
         }
 
         @Override
         public CollectionSupplier<T, C> plus(Collector<T> addedCollector) {
-            Collector<T> left = value.absentIgnoringIfNeeded(ignoreAbsent);
-            Collector<T> right = addedCollector;
-            PlusCollector<T> newCollector = new PlusCollector<>(left, right);
-            return new CollectingSupplier(newCollector);
+//            Collector<T> left = value.absentIgnoringIfNeeded(ignoreAbsent);
+//            Collector<T> right = addedCollector;
+
+//            PlusCollector<T> newCollector = new PlusCollector<>(left, right);
+            Preconditions.checkState(collectors.size() == size);
+//            new AbsentIgnoringCollector<>(addedCollector);
+//            collectors.set(size - 1, collectors.get(size - 1).absentIgnoringIfNeeded(ignoreAbsent));
+            collectors.add(addedCollector);
+
+            return new CollectingSupplier(collectors, size + 1, false);
         }
 
         @Override
         public CollectionSupplier<T, C> absentIgnoring() {
-            return ignoreAbsent ? this : new CollectingSupplier(value, true);
+            return ignoreAbsent ? this : new CollectingSupplier(collectors, size, true);
         }
 
         @Override
@@ -550,9 +580,19 @@ public abstract class AbstractCollectionProperty<T, C extends Collection<T>> ext
         }
 
         @Nonnull
+        private List<Collector<T>> getCollectors() {
+            return collectors.subList(0, size);
+        }
+
+        @Nonnull
         private List<ExecutionTimeValue<? extends Iterable<? extends T>>> collectExecutionTimeValues() {
             List<ExecutionTimeValue<? extends Iterable<? extends T>>> values = new ArrayList<>();
-            value.calculateExecutionTimeValue(values::add);
+            for (Collector<T> collector : getCollectors()) {
+                collector.calculateExecutionTimeValue(values::add);
+                if (values.stream().anyMatch(ExecutionTimeValue::isMissing) && collector instanceof AbsentIgnoringCollector<?>) {
+                    values.clear();
+                }
+            }
             return values;
         }
 
@@ -574,12 +614,22 @@ public abstract class AbstractCollectionProperty<T, C extends Collection<T>> ext
 
         @Override
         public ValueProducer getProducer() {
-            return value.getProducer();
+            return getCollectors().stream()
+                .map(ValueSupplier::getProducer)
+                .reduce(ValueProducer::plus)
+                .orElse(ValueProducer.unknown());
         }
 
         @Override
         public String toString() {
-            return value.toString();
+            StringBuilder sb = new StringBuilder();
+            getCollectors().forEach(collector -> {
+                if (sb.length() > 0) {
+                    sb.append(" + ");
+                }
+                sb.append(collector.toString());
+            });
+            return sb.toString();
         }
     }
 
@@ -679,107 +729,25 @@ public abstract class AbstractCollectionProperty<T, C extends Collection<T>> ext
         }
     }
 
-    private static abstract class AbstractPlusCollector<T> implements Collector<T> {
-        protected final Collector<T> left;
-        protected final Collector<T> right;
+    private static class AbsentIgnoringCollector<T> implements Collector<T> {
+        private final Collector<T> delegate;
 
-        private AbstractPlusCollector(Collector<T> left, Collector<T> right) {
-            this.left = left;
-            this.right = right;
-        }
-
-        @Override
-        public int size() {
-            return left.size() + right.size();
-        }
-
-        @Override
-        public ValueProducer getProducer() {
-            return left.getProducer().plus(right.getProducer());
-        }
-
-        @Override
-        public String toString() {
-            return left + " + " + right;
-        }
-
-    }
-
-    private static class PlusCollector<T> extends AbstractPlusCollector<T> {
-
-        public PlusCollector(Collector<T> left, Collector<T> right) {
-            super(left, right);
-        }
-
-        @Override
-        public Collector<T> absentIgnoring() {
-            return new AbsentIgnoringPlusCollector<>(left, right);
-        }
-
-        @Override
-        public boolean calculatePresence(ValueConsumer consumer) {
-            return left.calculatePresence(consumer) && right.calculatePresence(consumer);
-        }
-
-        @Override
-        public Value<Void> collectEntries(ValueConsumer consumer, ValueCollector<T> collector, ImmutableCollection.Builder<T> dest) {
-            Value<Void> leftValue = left.collectEntries(consumer, collector, dest);
-            if (leftValue.isMissing()) {
-                return leftValue;
-            }
-            Value<Void> rightValue = right.collectEntries(consumer, collector, dest);
-            if (rightValue.isMissing()) {
-                return rightValue;
-            }
-
-            return Value.present()
-                .withSideEffect(SideEffect.fixedFrom(leftValue))
-                .withSideEffect(SideEffect.fixedFrom(rightValue));
-        }
-
-        @Override
-        public void calculateExecutionTimeValue(Action<? super ExecutionTimeValue<? extends Iterable<? extends T>>> visitor) {
-            left.calculateExecutionTimeValue(visitor);
-            right.calculateExecutionTimeValue(visitor);
-        }
-    }
-
-    /**
-     * A plus collector that either produces a composition of both of its left and right sides,
-     * or Value.present() with empty content (if left or right side are missing).
-     */
-    private static class AbsentIgnoringPlusCollector<T> extends AbstractPlusCollector<T> {
-
-        public AbsentIgnoringPlusCollector(Collector<T> left, Collector<T> right) {
-            super(left, right);
-        }
-
-        @Override
-        public boolean calculatePresence(ValueConsumer consumer) {
-            return true;
-        }
-
-        @Override
-        public Collector<T> absentIgnoring() {
-            return this;
-        }
+        private AbsentIgnoringCollector(Collector<T> delegate) {this.delegate = delegate;}
 
         @Override
         public Value<Void> collectEntries(ValueConsumer consumer, ValueCollector<T> collector, ImmutableCollection.Builder<T> dest) {
             ImmutableList.Builder<T> candidateEntries = ImmutableList.builder();
-            // we cannot use dest directly because we don't want to emit any entries if either left or right are missing
-            Value<Void> leftValue = left.collectEntries(consumer, collector, candidateEntries);
-            if (leftValue.isMissing()) {
-                return Value.present();
-            }
-            Value<Void> rightValue = right.collectEntries(consumer, collector, candidateEntries);
-            if (rightValue.isMissing()) {
+            Value<Void> value = delegate.collectEntries(consumer, collector, candidateEntries);
+            if (value.isMissing()) {
                 return Value.present();
             }
             dest.addAll(candidateEntries.build());
-            return Value.present()
-                .withSideEffect(SideEffect.fixedFrom(leftValue))
-                .withSideEffect(SideEffect.fixedFrom(rightValue));
+            return Value.present().withSideEffect(SideEffect.fixedFrom(value));
+        }
+
+        @Override
+        public int size() {
+            return delegate.size();
         }
 
         @Override
@@ -793,14 +761,150 @@ public abstract class AbstractCollectionProperty<T, C extends Collection<T>> ext
                     toVisit.add(value);
                 }
             };
-            left.calculateExecutionTimeValue(safeVisitor);
-            right.calculateExecutionTimeValue(safeVisitor);
+            delegate.calculateExecutionTimeValue(safeVisitor);
             if (!anyMissing[0]) {
-                toVisit.build().forEach(it -> visitor.execute(it));
+                toVisit.build().forEach(visitor::execute);
             }
+        }
+
+        @Override
+        public boolean calculatePresence(ValueConsumer consumer) {
+            return true;
+        }
+
+        @Override
+        public ValueProducer getProducer() {
+            return delegate.getProducer();
+        }
+
+        @Override
+        public Collector<T> absentIgnoring() {
+            return this;
         }
     }
 
+
+//    private static abstract class AbstractPlusCollector<T> implements Collector<T> {
+//        protected final Collector<T> left;
+//        protected final Collector<T> right;
+//
+//        private AbstractPlusCollector(Collector<T> left, Collector<T> right) {
+//            this.left = left;
+//            this.right = right;
+//        }
+//
+//        @Override
+//        public int size() {
+//            return left.size() + right.size();
+//        }
+//
+//        @Override
+//        public ValueProducer getProducer() {
+//            return left.getProducer().plus(right.getProducer());
+//        }
+//
+//        @Override
+//        public String toString() {
+//            return left + " + " + right;
+//        }
+//
+//    }
+
+//    private static class PlusCollector<T> extends AbstractPlusCollector<T> {
+//
+//        public PlusCollector(Collector<T> left, Collector<T> right) {
+//            super(left, right);
+//        }
+//
+//        @Override
+//        public Collector<T> absentIgnoring() {
+//            return new AbsentIgnoringPlusCollector<>(left, right);
+//        }
+//
+//        @Override
+//        public boolean calculatePresence(ValueConsumer consumer) {
+//            return left.calculatePresence(consumer) && right.calculatePresence(consumer);
+//        }
+//
+//        @Override
+//        public Value<Void> collectEntries(ValueConsumer consumer, ValueCollector<T> collector, ImmutableCollection.Builder<T> dest) {
+//            Value<Void> leftValue = left.collectEntries(consumer, collector, dest);
+//            if (leftValue.isMissing()) {
+//                return leftValue;
+//            }
+//            Value<Void> rightValue = right.collectEntries(consumer, collector, dest);
+//            if (rightValue.isMissing()) {
+//                return rightValue;
+//            }
+//
+//            return Value.present()
+//                .withSideEffect(SideEffect.fixedFrom(leftValue))
+//                .withSideEffect(SideEffect.fixedFrom(rightValue));
+//        }
+//
+//        @Override
+//        public void calculateExecutionTimeValue(Action<? super ExecutionTimeValue<? extends Iterable<? extends T>>> visitor) {
+//            left.calculateExecutionTimeValue(visitor);
+//            right.calculateExecutionTimeValue(visitor);
+//        }
+//    }
+
+    /**
+     * A plus collector that either produces a composition of both of its left and right sides,
+     * or Value.present() with empty content (if left or right side are missing).
+     */
+//    private static class AbsentIgnoringPlusCollector<T> extends AbstractPlusCollector<T> {
+//
+//        public AbsentIgnoringPlusCollector(Collector<T> left, Collector<T> right) {
+//            super(left, right);
+//        }
+//
+//        @Override
+//        public boolean calculatePresence(ValueConsumer consumer) {
+//            return true;
+//        }
+//
+//        @Override
+//        public Collector<T> absentIgnoring() {
+//            return this;
+//        }
+//
+//        @Override
+//        public Value<Void> collectEntries(ValueConsumer consumer, ValueCollector<T> collector, ImmutableCollection.Builder<T> dest) {
+//            ImmutableList.Builder<T> candidateEntries = ImmutableList.builder();
+//            // we cannot use dest directly because we don't want to emit any entries if either left or right are missing
+//            Value<Void> leftValue = left.collectEntries(consumer, collector, candidateEntries);
+//            if (leftValue.isMissing()) {
+//                return Value.present();
+//            }
+//            Value<Void> rightValue = right.collectEntries(consumer, collector, candidateEntries);
+//            if (rightValue.isMissing()) {
+//                return Value.present();
+//            }
+//            dest.addAll(candidateEntries.build());
+//            return Value.present()
+//                .withSideEffect(SideEffect.fixedFrom(leftValue))
+//                .withSideEffect(SideEffect.fixedFrom(rightValue));
+//        }
+//
+//        @Override
+//        public void calculateExecutionTimeValue(Action<? super ExecutionTimeValue<? extends Iterable<? extends T>>> visitor) {
+//            boolean[] anyMissing = {false};
+//            ImmutableList.Builder<ExecutionTimeValue<? extends Iterable<? extends T>>> toVisit = ImmutableList.builder();
+//            Action<? super ExecutionTimeValue<? extends Iterable<? extends T>>> safeVisitor = value -> {
+//                if (value.isMissing()) {
+//                    anyMissing[0] = true;
+//                } else {
+//                    toVisit.add(value);
+//                }
+//            };
+//            left.calculateExecutionTimeValue(safeVisitor);
+//            right.calculateExecutionTimeValue(safeVisitor);
+//            if (!anyMissing[0]) {
+//                toVisit.build().forEach(it -> visitor.execute(it));
+//            }
+//        }
+//    }
     public void replace(Transformer<? extends @org.jetbrains.annotations.Nullable Provider<? extends Iterable<? extends T>>, ? super Provider<C>> transformation) {
         Provider<? extends Iterable<? extends T>> newValue = transformation.transform(shallowCopy());
         if (newValue != null) {

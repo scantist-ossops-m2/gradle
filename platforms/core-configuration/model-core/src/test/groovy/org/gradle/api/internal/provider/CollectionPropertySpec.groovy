@@ -1385,48 +1385,48 @@ The value of this property is derived from: <source>""")
         }
 
         when:
-        operations.each {operation -> operation.call(property) }
+        operations.each { operation -> operation.call(property) }
 
         then:
         expected == null || property.getOrNull() == toImmutable(expected)
         expected != null || !property.present
 
         where:
-        expected    | explicit      | convention    | label                                             | operations
-        ["1"]       | _             | _             | "add"                                             | { it.add("1") }
-        ["1"]       | _             | _             | "append"                                          | { it.append("1") }
-        ["1"]       | []            | _             | "add to empty"                                    | { it.add("1") }
-        ["1"]       | []            | _             | "append to empty"                                 | { it.append("1") }
-        ["1"]       | _             | []            | "add to empty convention"                         | { it.add("1") }
-        ["1"]       | _             | []            | "append to empty convention"                      | { it.append("1") }
-        null        | null          | []            | "add to unset value w/ empty convention"          | { it.add("1") }
-        ["1"]       | null          | []            | "append to unset value w/ empty convention"       | { it.append("1") }
-        ["1"]       | _             | ["0"]         | "add to non-empty convention"                     | { it.add("1") }
-        ["0", "1"]  | _             | ["0"]         | "append to non-empty convention"                  | { it.append("1") }
-        null        | null          | ["0"]         | "add to unset value w/ non-empty convention"      | { it.add("1") }
-        ["0", "1"]  | null          | ["0"]         | "append to unset value w/ non-empty convention"   | { it.append("1") }
-        null        | notDefined()  | _             | "add to missing"                                  | { it.add("1") }
-        ["1"]       | notDefined()  | _             | "append to missing"                               | { it.append("1") }
-        null        | notDefined()  | ["0"]         | "add to missing w/ non-empty convention"          | { it.add("1") }
-        ["1"]       | notDefined()  | ["0"]         | "append to missing w/ non-empty convention"       | { it.append("1") }
-        null        | []            | _             | "add missing to empty value"                      | { it.add(notDefined()) }
-        []          | []            | _             | "append missing to empty value"                   | { it.append(notDefined()) }
-        null        | _             | _             | "add missing"                                     | { it.add(notDefined()) }
-        []          | _             | _             | "append missing"                                  | { it.append(notDefined()) }
-        ["1"]       | _             | _             | "add missing, then append"                        | { it.add(notDefined()) ; it.append("1") }
-        ["1"]       | _             | _             | "append missing, then add"                        | { it.append(notDefined()) ; it.add("1") }
-        ["1"]       | ["0"]         | _             | "add missing to non-empty value, then append"     | { it.add(notDefined()) ; it.append("1") }
-        ["0", "1"]  | ["0"]         | _             | "append missing to non-empty value, then add"     | { it.append(notDefined()) ; it.add("1") }
-        ["1"]       | _             | ["0"]         | "add missing to non-empty convention, then append"| { it.add(notDefined()) ; it.append("1") }
-        ["0", "1"]  | _             | ["0"]         | "append missing to non-empty convention, then add"| { it.append(notDefined()) ; it.add("1") }
-        ["1"]       | _             | _             | "add, then append missing"                        | { it.add("1") ; it.append(notDefined()) }
-        null        | _             | _             | "append, then add missing"                        | { it.append("1") ; it.add(notDefined()) }
-        ["0", "1"]  | ["0"]         | _             | "add to non-empty value, then append missing"     | { it.add("1") ; it.append(notDefined()) }
-        null        | ["0"]         | _             | "append to non-empty value, then add missing"     | { it.append("1") ; it.add(notDefined()) }
-        ["1"]       | _             | ["0"]         | "add to non-empty convention, then append missing"| { it.add("1") ; it.append(notDefined()) }
-        null        | _             | ["0"]         | "append to non-empty conventio, then add missing" | { it.append("1") ; it.add(notDefined()) }
-        ["1"]       | _             | _             | "add, then add missing, then append"              | { it.add("0") ; it.add(notDefined()) ; it.append("1") }
-        ["0", "1"]  | _             | _             | "add, then append missing, then add"              | { it.add("0") ; it.append(notDefined()) ; it.add("1") }
+        expected   | explicit     | convention | label                                              | operations
+        ["1"]      | _            | _          | "add"                                              | { it.add("1") }
+        ["1"]      | _            | _          | "append"                                           | { it.append("1") }
+        ["1"]      | []           | _          | "add to empty"                                     | { it.add("1") }
+        ["1"]      | []           | _          | "append to empty"                                  | { it.append("1") }
+        ["1"]      | _            | []         | "add to empty convention"                          | { it.add("1") }
+        ["1"]      | _            | []         | "append to empty convention"                       | { it.append("1") }
+        null       | null         | []         | "add to unset value w/ empty convention"           | { it.add("1") }
+        ["1"]      | null         | []         | "append to unset value w/ empty convention"        | { it.append("1") }
+        ["1"]      | _            | ["0"]      | "add to non-empty convention"                      | { it.add("1") }
+        ["0", "1"] | _            | ["0"]      | "append to non-empty convention"                   | { it.append("1") }
+        null       | null         | ["0"]      | "add to unset value w/ non-empty convention"       | { it.add("1") }
+        ["0", "1"] | null         | ["0"]      | "append to unset value w/ non-empty convention"    | { it.append("1") }
+        null       | notDefined() | _          | "add to missing"                                   | { it.add("1") }
+        ["1"]      | notDefined() | _          | "append to missing"                                | { it.append("1") }
+        null       | notDefined() | ["0"]      | "add to missing w/ non-empty convention"           | { it.add("1") }
+        ["1"]      | notDefined() | ["0"]      | "append to missing w/ non-empty convention"        | { it.append("1") }
+        null       | []           | _          | "add missing to empty value"                       | { it.add(notDefined()) }
+        []         | []           | _          | "append missing to empty value"                    | { it.append(notDefined()) }
+        null       | _            | _          | "add missing"                                      | { it.add(notDefined()) }
+        []         | _            | _          | "append missing"                                   | { it.append(notDefined()) }
+        ["1"]      | _            | _          | "add missing, then append"                         | { it.add(notDefined()); it.append("1") }
+        ["1"]      | _            | _          | "append missing, then add"                         | { it.append(notDefined()); it.add("1") }
+        ["1"]      | ["0"]        | _          | "add missing to non-empty value, then append"      | { it.add(notDefined()); it.append("1") }
+        ["0", "1"] | ["0"]        | _          | "append missing to non-empty value, then add"      | { it.append(notDefined()); it.add("1") }
+        ["1"]      | _            | ["0"]      | "add missing to non-empty convention, then append" | { it.add(notDefined()); it.append("1") }
+        ["0", "1"] | _            | ["0"]      | "append missing to non-empty convention, then add" | { it.append(notDefined()); it.add("1") }
+        ["1"]      | _            | _          | "add, then append missing"                         | { it.add("1"); it.append(notDefined()) }
+        null       | _            | _          | "append, then add missing"                         | { it.append("1"); it.add(notDefined()) }
+        ["0", "1"] | ["0"]        | _          | "add to non-empty value, then append missing"      | { it.add("1"); it.append(notDefined()) }
+        null       | ["0"]        | _          | "append to non-empty value, then add missing"      | { it.append("1"); it.add(notDefined()) }
+        ["1"]      | _            | ["0"]      | "add to non-empty convention, then append missing" | { it.add("1"); it.append(notDefined()) }
+        null       | _            | ["0"]      | "append to non-empty convention, then add missing" | { it.append("1"); it.add(notDefined()) }
+        ["1"]      | _            | _          | "add, then add missing, then append"               | { it.add("0"); it.add(notDefined()); it.append("1") }
+        ["0", "1"] | _            | _          | "add, then append missing, then add"               | { it.add("0"); it.append(notDefined()); it.add("1") }
     }
 
     def "execution time value is present if only undefined-safe operations are performed"() {
@@ -1445,7 +1445,7 @@ The value of this property is derived from: <source>""")
         def execTimeValue = property.calculateExecutionTimeValue()
 
         then:
-        assertCollectionIs(toImmutable(['2', '3', '4']), execTimeValue.toValue().get())
+        assertCollectionIs(execTimeValue.toValue().get(), toImmutable(['2', '3', '4']),)
     }
 
     def "property restores undefined-safe items"() {
@@ -1598,5 +1598,15 @@ The value of this property is derived from: <source>""")
         then:
         assertValueIs([])
         !property.explicit
+    }
+
+    def "can add a lot of providers"() {
+        given:
+        (0..<100000).each {
+            property.add(Providers.of("$it"))
+        }
+
+        expect:
+        property.get().size() == 100000
     }
 }
