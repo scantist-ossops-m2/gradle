@@ -345,13 +345,13 @@ class AndroidPluginsSmokeTest extends AbstractPluginValidatingSmokeTest implemen
 
         """
             android {
-                compileSdkVersion = 30
+                compileSdk = 30
                 buildToolsVersion = "${TestedVersions.androidTools}"
 
                 namespace = "${appPackage}"
                 defaultConfig {
-                    minSdkVersion = 22
-                    targetSdkVersion = 26
+                    minSdk = 22
+                    targetSdk = 26
                     versionCode = 1
                     versionName = "1.0"
                 }
@@ -395,8 +395,8 @@ class AndroidPluginsSmokeTest extends AbstractPluginValidatingSmokeTest implemen
             buildFile << """
                 android {
                     namespace = "org.gradle.android.example.app"
-                    compileSdkVersion 24
-                    buildToolsVersion '${TestedVersions.androidTools}'
+                    compileSdk = 24
+                    buildToolsVersion = '${TestedVersions.androidTools}'
                 }
             """
         }
